@@ -43,13 +43,16 @@ checked against the **official X3D 4.0 XML Schema**, a **semantic linter grounde
    missing Viewpoint, unknown nodes/fields with *did-you-mean* suggestions, nodes unsupported by the running X_ITE build.
 3. **Runtime**: X_ITE parse errors and warnings (missing textures, bad URLs...) are captured and surfaced.
 
-**AI co-author**
-- Chat with Claude directly from the browser (your key, stored in `localStorage`, sent only to the Anthropic API).
+**AI co-author (Gemini or Claude)**
+- Chat with **Google Gemini** or **Anthropic Claude** directly from the browser: your key stays in `localStorage` and is
+  sent only to the provider's API host. Switch provider and model in ⚙ Settings; “Fetch models” lists what your key
+  can use.
 - The model works only through tools: `get_scene`, `edit_scene` (exact, unique text patches), `replace_scene`,
   `validate_scene`, `lookup_node` / `search_nodes` (the ISO spec database), `screenshot` (vision check of the render).
 - Every edit returns the full validation report, so the model **repairs its own mistakes** until the scene is valid and
   renders; then it looks at a screenshot to check framing, lighting and colours.
-- Prompt caching, streaming, adaptive thinking; choose Opus 5 / Sonnet 5 / Haiku 4.5 and the effort level.
+- Streaming, function calling with multimodal tool results, thinking level / effort control. The provider layer
+  (`src/ai/providers/`) is ~150 lines per backend, so adding another is straightforward.
 
 ## Run it
 
@@ -62,6 +65,9 @@ npm run build      # static site in dist/
 
 Set your API key in **⚙ Settings**. No server component exists: the whole tool is static files.
 
+Getting a key: **Gemini** - https://aistudio.google.com/apikey (free tier available, no card needed);
+**Claude** - https://console.anthropic.com/settings/keys (requires billing).
+
 ## Project layout
 
 ```
@@ -73,7 +79,8 @@ src/spec/uom.ts       spec database queries: hierarchy, acceptable children, fie
 src/validation/       lint.ts (semantic rules), xsd.ts (libxml2-wasm), index.ts (pipeline)
 src/viewer.ts         X_ITE wrapper: load, capture runtime issues, screenshot, convert formats, serialise
 src/editor.ts         CodeMirror 6 with UOM-driven completion + diagnostics
-src/ai/               prompt.ts, tools.ts (tool schemas + executors), agent.ts (streaming tool loop)
+src/ai/               prompt.ts, tools.ts (tool schemas + executors), agent.ts (provider-neutral tool loop),
+                      providers/gemini.ts + providers/anthropic.ts (SDK adapters)
 src/main.ts           UI wiring
 tests/                vitest suites
 ```
@@ -83,6 +90,7 @@ tests/                vitest suites
 - X3D 4.0, ISO/IEC 19775-1:2023, XML encoding ISO/IEC 19776-1; schema and X3DUOM © Web3D Consortium.
 - [X_ITE](https://create3000.github.io/x_ite/) X3D browser by Holger Seelig (MIT).
 - [libxml2-wasm](https://github.com/jameslan/libxml2-wasm) (MIT), [CodeMirror 6](https://codemirror.net/) (MIT),
+  [Google Gen AI SDK](https://github.com/googleapis/js-genai) (Apache-2.0),
   [Anthropic TypeScript SDK](https://github.com/anthropics/anthropic-sdk-typescript) (MIT).
 
 MIT License.
