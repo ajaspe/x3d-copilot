@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Interchange" version="4.0">
+  <Scene>
+    <Shape>
+      <Appearance>
+        <Material difuseColor="1 0 0"/>
+      </Appearance>
+      <Cube size="1 1 1"/>
+    </Shape>
+  </Scene>
+</X3D>

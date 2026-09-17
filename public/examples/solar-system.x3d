@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Immersive" version="4.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="https://www.web3d.org/specifications/x3d-4.0.xsd">
+  <head>
+    <meta name="title" content="solar-system.x3d"/>
+    <meta name="description" content="Nested Transforms: the moon orbits the earth while the earth orbits the sun. Each orbit has its own TimeSensor."/>
+    <meta name="generator" content="X3D Copilot"/>
+  </head>
+  <Scene>
+    <WorldInfo title="Solar system"/>
+    <NavigationInfo type='"EXAMINE" "ANY"' headlight="false"/>
+    <Background skyColor="0 0 0.02"/>
+    <Viewpoint description="Above the ecliptic" position="0 9 14" orientation="1 0 0 -0.55"/>
+    <Viewpoint description="Edge on" position="0 0.5 16"/>
+
+    <!-- Sun: emissive, and the only light source -->
+    <PointLight DEF="SunLight" location="0 0 0" intensity="2" radius="60" ambientIntensity="0.1"/>
+    <Transform DEF="SunSpin">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="1 0.6 0.1" emissiveColor="1 0.55 0.05"/>
+        </Appearance>
+        <Sphere radius="1.6"/>
+      </Shape>
+    </Transform>
+
+    <!-- Earth orbit -->
+    <Transform DEF="EarthOrbit">
+      <Transform translation="6 0 0">
+        <Transform DEF="EarthSpin">
+          <Shape>
+            <Appearance>
+              <Material diffuseColor="0.15 0.4 0.9" specularColor="0.4 0.4 0.5" shininess="0.4"/>
+            </Appearance>
+            <Sphere radius="0.55"/>
+          </Shape>
+        </Transform>
+        <!-- Moon orbit, nested in the earth's frame -->
+        <Transform DEF="MoonOrbit">
+          <Transform translation="1.3 0 0">
+            <Shape>
+              <Appearance>
+                <Material diffuseColor="0.75 0.75 0.7"/>
+              </Appearance>
+              <Sphere radius="0.16"/>
+            </Shape>
+          </Transform>
+        </Transform>
+      </Transform>
+    </Transform>
+
+    <!-- Orbit guide ring -->
+    <Transform rotation="1 0 0 1.5708">
+      <Shape>
+        <Appearance><Material emissiveColor="0.25 0.25 0.35"/></Appearance>
+        <Circle2D radius="6"/>
+      </Shape>
+    </Transform>
+
+    <TimeSensor DEF="YearClock" cycleInterval="20" loop="true"/>
+    <TimeSensor DEF="MonthClock" cycleInterval="2.5" loop="true"/>
+    <TimeSensor DEF="DayClock" cycleInterval="3" loop="true"/>
+    <TimeSensor DEF="SunClock" cycleInterval="40" loop="true"/>
+    <OrientationInterpolator DEF="Spin" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14159  0 1 0 6.28318"/>
+
+    <ROUTE fromNode="YearClock" fromField="fraction_changed" toNode="Spin" toField="set_fraction"/>
+    <ROUTE fromNode="Spin" fromField="value_changed" toNode="EarthOrbit" toField="set_rotation"/>
+
+    <OrientationInterpolator DEF="MoonSpin" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14159  0 1 0 6.28318"/>
+    <ROUTE fromNode="MonthClock" fromField="fraction_changed" toNode="MoonSpin" toField="set_fraction"/>
+    <ROUTE fromNode="MoonSpin" fromField="value_changed" toNode="MoonOrbit" toField="set_rotation"/>
+
+    <OrientationInterpolator DEF="EarthDay" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14159  0 1 0 6.28318"/>
+    <ROUTE fromNode="DayClock" fromField="fraction_changed" toNode="EarthDay" toField="set_fraction"/>
+    <ROUTE fromNode="EarthDay" fromField="value_changed" toNode="EarthSpin" toField="set_rotation"/>
+
+    <OrientationInterpolator DEF="SunRot" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14159  0 1 0 6.28318"/>
+    <ROUTE fromNode="SunClock" fromField="fraction_changed" toNode="SunRot" toField="set_fraction"/>
+    <ROUTE fromNode="SunRot" fromField="value_changed" toNode="SunSpin" toField="set_rotation"/>
+  </Scene>
+</X3D>

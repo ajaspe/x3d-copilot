@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Imersive" version="3.3">
+  <head>
+    <meta name="title" content="broken-scene.x3d"/>
+    <meta name="description" content="Deliberately broken: ask the copilot to fix it. Contains a misspelled profile, a stale version, a misplaced Material, a typo in a field, a bad ROUTE, an interpolator count mismatch and an undefined USE."/>
+  </head>
+  <Scene>
+    <Viewpoint position="0 0 8"/>
+    <Transform DEF="Spinner">
+      <Shape>
+        <Material difuseColor="1 0 0"/>
+        <Box size="1 1"/>
+      </Shape>
+    </Transform>
+    <Shape USE="Floor"/>
+    <TimeSensor DEF="Clock" cycleInterval="5" loop="True"/>
+    <OrientationInterpolator DEF="Rot" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14"/>
+    <ROUTE fromNode="Clock" fromField="fraction" toNode="Rot" toField="set_fraction"/>
+    <ROUTE fromNode="Rot" fromField="value_changed" toNode="Spiner" toField="rotation"/>
+    <ROUTE fromNode="Rot" fromField="value_changed" toNode="Spinner" toField="translation"/>
+  </Scene>
+</X3D>
