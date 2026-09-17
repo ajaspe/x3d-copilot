@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Full" version="4.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="https://www.web3d.org/specifications/x3d-4.0.xsd">
+  <head>
+    <component name="HAnim" level="1"/>
+    <meta name="title" content="hanim-minimal.x3d"/>
+    <meta name="description" content="A minimal HAnim 2.0 humanoid (ISO/IEC 19774): humanoid_root with a waving right arm. Joint/segment names follow the LOA-1 naming."/>
+    <meta name="generator" content="X3D Copilot"/>
+  </head>
+  <Scene>
+    <NavigationInfo type='"EXAMINE" "ANY"'/>
+    <Background skyColor="0.16 0.18 0.22"/>
+    <Viewpoint description="Front" position="0 0.9 4.5"/>
+    <DirectionalLight direction="-0.3 -1 -0.8" intensity="0.8"/>
+
+    <HAnimHumanoid DEF="Robby" name="Robby" version="2.0" skeletalConfiguration="BASIC" loa="1">
+      <HAnimJoint DEF="Robby_humanoid_root" name="humanoid_root" center="0 0.82 0" containerField="skeleton">
+        <HAnimSegment DEF="Robby_sacrum" name="sacrum">
+          <Transform translation="0 1.05 0">
+            <Shape>
+              <Appearance><Material DEF="BodyMat" diffuseColor="0.35 0.55 0.85"/></Appearance>
+              <Box size="0.5 0.7 0.28"/>
+            </Shape>
+          </Transform>
+          <Transform translation="0 0.5 0">
+            <Shape>
+              <Appearance><Material USE="BodyMat"/></Appearance>
+              <Box size="0.42 0.5 0.26"/>
+            </Shape>
+          </Transform>
+        </HAnimSegment>
+
+        <HAnimJoint DEF="Robby_vl5" name="vl5" center="0 1.45 0">
+          <HAnimJoint DEF="Robby_skullbase" name="skullbase" center="0 1.55 0">
+            <HAnimSegment DEF="Robby_skull" name="skull">
+              <Transform translation="0 1.72 0">
+                <Shape>
+                  <Appearance><Material diffuseColor="0.9 0.8 0.6"/></Appearance>
+                  <Sphere radius="0.17"/>
+                </Shape>
+              </Transform>
+            </HAnimSegment>
+          </HAnimJoint>
+
+          <HAnimJoint DEF="Robby_r_shoulder" name="r_shoulder" center="-0.32 1.35 0">
+            <HAnimSegment DEF="Robby_r_upperarm" name="r_upperarm">
+              <Transform translation="-0.32 1.15 0">
+                <Shape>
+                  <Appearance><Material USE="BodyMat"/></Appearance>
+                  <Cylinder radius="0.06" height="0.4"/>
+                </Shape>
+              </Transform>
+            </HAnimSegment>
+            <HAnimJoint DEF="Robby_r_elbow" name="r_elbow" center="-0.32 0.95 0">
+              <HAnimSegment DEF="Robby_r_forearm" name="r_forearm">
+                <Transform translation="-0.32 0.75 0">
+                  <Shape>
+                    <Appearance><Material diffuseColor="0.9 0.8 0.6"/></Appearance>
+                    <Cylinder radius="0.05" height="0.4"/>
+                  </Shape>
+                </Transform>
+              </HAnimSegment>
+            </HAnimJoint>
+          </HAnimJoint>
+
+          <HAnimJoint DEF="Robby_l_shoulder" name="l_shoulder" center="0.32 1.35 0">
+            <HAnimSegment DEF="Robby_l_upperarm" name="l_upperarm">
+              <Transform translation="0.32 1.15 0">
+                <Shape>
+                  <Appearance><Material USE="BodyMat"/></Appearance>
+                  <Cylinder radius="0.06" height="0.4"/>
+                </Shape>
+              </Transform>
+              <Transform translation="0.32 0.75 0">
+                <Shape>
+                  <Appearance><Material diffuseColor="0.9 0.8 0.6"/></Appearance>
+                  <Cylinder radius="0.05" height="0.4"/>
+                </Shape>
+              </Transform>
+            </HAnimSegment>
+          </HAnimJoint>
+        </HAnimJoint>
+
+        <HAnimJoint DEF="Robby_r_hip" name="r_hip" center="-0.12 0.82 0">
+          <HAnimSegment DEF="Robby_r_thigh" name="r_thigh">
+            <Transform translation="-0.12 0.4 0">
+              <Shape>
+                <Appearance><Material diffuseColor="0.2 0.2 0.28"/></Appearance>
+                <Cylinder radius="0.08" height="0.8"/>
+              </Shape>
+            </Transform>
+          </HAnimSegment>
+        </HAnimJoint>
+        <HAnimJoint DEF="Robby_l_hip" name="l_hip" center="0.12 0.82 0">
+          <HAnimSegment DEF="Robby_l_thigh" name="l_thigh">
+            <Transform translation="0.12 0.4 0">
+              <Shape>
+                <Appearance><Material diffuseColor="0.2 0.2 0.28"/></Appearance>
+                <Cylinder radius="0.08" height="0.8"/>
+              </Shape>
+            </Transform>
+          </HAnimSegment>
+        </HAnimJoint>
+      </HAnimJoint>
+
+      <!-- joints field: flat list of USE references for SAI access -->
+      <HAnimJoint USE="Robby_humanoid_root" containerField="joints"/>
+      <HAnimJoint USE="Robby_vl5" containerField="joints"/>
+      <HAnimJoint USE="Robby_skullbase" containerField="joints"/>
+      <HAnimJoint USE="Robby_r_shoulder" containerField="joints"/>
+      <HAnimJoint USE="Robby_r_elbow" containerField="joints"/>
+      <HAnimJoint USE="Robby_l_shoulder" containerField="joints"/>
+      <HAnimJoint USE="Robby_r_hip" containerField="joints"/>
+      <HAnimJoint USE="Robby_l_hip" containerField="joints"/>
+    </HAnimHumanoid>
+
+    <TimeSensor DEF="WaveClock" cycleInterval="2" loop="true"/>
+    <OrientationInterpolator DEF="ShoulderWave" key="0 0.5 1" keyValue="0 0 1 -2.6  0 0 1 -2.2  0 0 1 -2.6"/>
+    <OrientationInterpolator DEF="ElbowWave" key="0 0.5 1" keyValue="0 0 1 -0.4  0 0 1 0.6  0 0 1 -0.4"/>
+    <ROUTE fromNode="WaveClock" fromField="fraction_changed" toNode="ShoulderWave" toField="set_fraction"/>
+    <ROUTE fromNode="ShoulderWave" fromField="value_changed" toNode="Robby_r_shoulder" toField="set_rotation"/>
+    <ROUTE fromNode="WaveClock" fromField="fraction_changed" toNode="ElbowWave" toField="set_fraction"/>
+    <ROUTE fromNode="ElbowWave" fromField="value_changed" toNode="Robby_r_elbow" toField="set_rotation"/>
+  </Scene>
+</X3D>

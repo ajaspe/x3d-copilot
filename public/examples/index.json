@@ -1,0 +1,9 @@
+[
+  { "file": "hello-spinning-box.x3d", "title": "Hello spinning box", "description": "Minimal animated scene: TimeSensor → OrientationInterpolator → Transform" },
+  { "file": "pbr-materials.x3d", "title": "PBR material study (X3D4)", "description": "PhysicalMaterial spheres sweeping roughness and metallic" },
+  { "file": "solar-system.x3d", "title": "Solar system", "description": "Nested Transforms with independent orbital animations, Background, lights" },
+  { "file": "click-to-animate.x3d", "title": "Click to animate", "description": "TouchSensor → TimeSensor idiom, Text with FontStyle, Billboard" },
+  { "file": "extrusion-and-mesh.x3d", "title": "Extrusion & IndexedFaceSet", "description": "Procedural torus via Extrusion and a hand-built pyramid mesh" },
+  { "file": "hanim-minimal.x3d", "title": "HAnim 2.0 minimal humanoid", "description": "A tiny HAnimHumanoid skeleton with animated joints" },
+  { "file": "broken-scene.x3d", "title": "Broken scene (try: ask the copilot to fix it)", "description": "Deliberate mistakes: bad ROUTEs, misplaced nodes, typos, key/keyValue mismatch" }
+]

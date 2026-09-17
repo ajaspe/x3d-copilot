@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Full" version="4.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="https://www.web3d.org/specifications/x3d-4.0.xsd">
+  <head>
+    <meta name="title" content="pbr-materials.x3d"/>
+    <meta name="description" content="X3D 4.0 PhysicalMaterial study: roughness increases left to right, metallic increases bottom to top."/>
+    <meta name="generator" content="X3D Copilot"/>
+  </head>
+  <Scene>
+    <NavigationInfo type='"EXAMINE" "ANY"' headlight="false"/>
+    <Background skyColor="0.02 0.02 0.03 0.10 0.11 0.14 0.35 0.38 0.45" skyAngle="1.2 1.5707" groundColor="0.05 0.05 0.06 0.02 0.02 0.03" groundAngle="1.5707"/>
+    <Viewpoint description="Overview" position="0 0 11" fieldOfView="0.6"/>
+    <DirectionalLight direction="-0.4 -0.6 -1" intensity="1.2" color="1 0.97 0.92"/>
+    <DirectionalLight direction="0.8 0.3 -0.5" intensity="0.5" color="0.7 0.8 1"/>
+    <PointLight location="0 4 3" intensity="1.5" radius="30"/>
+
+    <!-- row: metallic 0 -->
+    <Transform translation="-3 -1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.85 0.2 0.15" metallic="0" roughness="0.05"/></Appearance><Sphere DEF="Ball" radius="0.65"/></Shape></Transform>
+    <Transform translation="-1 -1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.85 0.2 0.15" metallic="0" roughness="0.35"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="1 -1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.85 0.2 0.15" metallic="0" roughness="0.65"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="3 -1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.85 0.2 0.15" metallic="0" roughness="1"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+
+    <!-- row: metallic 0.5 -->
+    <Transform translation="-3 0 0"><Shape><Appearance><PhysicalMaterial baseColor="0.9 0.75 0.3" metallic="0.5" roughness="0.05"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="-1 0 0"><Shape><Appearance><PhysicalMaterial baseColor="0.9 0.75 0.3" metallic="0.5" roughness="0.35"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="1 0 0"><Shape><Appearance><PhysicalMaterial baseColor="0.9 0.75 0.3" metallic="0.5" roughness="0.65"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="3 0 0"><Shape><Appearance><PhysicalMaterial baseColor="0.9 0.75 0.3" metallic="0.5" roughness="1"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+
+    <!-- row: metallic 1 -->
+    <Transform translation="-3 1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.75 0.78 0.82" metallic="1" roughness="0.05"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="-1 1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.75 0.78 0.82" metallic="1" roughness="0.35"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="1 1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.75 0.78 0.82" metallic="1" roughness="0.65"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+    <Transform translation="3 1.5 0"><Shape><Appearance><PhysicalMaterial baseColor="0.75 0.78 0.82" metallic="1" roughness="1"/></Appearance><Sphere USE="Ball"/></Shape></Transform>
+
+    <Transform translation="0 -2.9 0">
+      <Shape>
+        <Appearance><UnlitMaterial emissiveColor="0.7 0.75 0.85"/></Appearance>
+        <Text string='"roughness 0.05 to 1.0"'><FontStyle family='"SANS"' justify='"MIDDLE" "MIDDLE"' size="0.45"/></Text>
+      </Shape>
+    </Transform>
+    <Transform translation="-4.6 0 0" rotation="0 0 1 1.5708">
+      <Shape>
+        <Appearance><UnlitMaterial emissiveColor="0.7 0.75 0.85"/></Appearance>
+        <Text string='"metallic 0 to 1"'><FontStyle family='"SANS"' justify='"MIDDLE" "MIDDLE"' size="0.45"/></Text>
+      </Shape>
+    </Transform>
+  </Scene>
+</X3D>

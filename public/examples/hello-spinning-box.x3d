@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE X3D PUBLIC "ISO//Web3D//DTD X3D 4.0//EN" "https://www.web3d.org/specifications/x3d-4.0.dtd">
+<X3D profile="Immersive" version="4.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="https://www.web3d.org/specifications/x3d-4.0.xsd">
+  <head>
+    <meta name="title" content="hello-spinning-box.x3d"/>
+    <meta name="description" content="Minimal animated scene: a TimeSensor drives an OrientationInterpolator that rotates a Transform."/>
+    <meta name="generator" content="X3D Copilot"/>
+  </head>
+  <Scene>
+    <WorldInfo title="Hello spinning box"/>
+    <NavigationInfo type='"EXAMINE" "ANY"'/>
+    <Background skyColor="0.07 0.09 0.13"/>
+    <Viewpoint DEF="Home" description="Home" position="0 1.2 6" orientation="1 0 0 -0.18"/>
+    <DirectionalLight direction="-0.5 -1 -0.6" intensity="0.8"/>
+    <Transform DEF="Spinner">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0.95 0.45 0.12" specularColor="0.6 0.6 0.6" shininess="0.3"/>
+        </Appearance>
+        <Box size="1.4 1.4 1.4"/>
+      </Shape>
+    </Transform>
+    <Transform translation="0 -1 0">
+      <Shape>
+        <Appearance>
+          <Material diffuseColor="0.2 0.25 0.3"/>
+        </Appearance>
+        <Cylinder radius="2.5" height="0.1"/>
+      </Shape>
+    </Transform>
+    <TimeSensor DEF="Clock" cycleInterval="8" loop="true"/>
+    <OrientationInterpolator DEF="Rot" key="0 0.5 1" keyValue="0 1 0 0  0 1 0 3.14159  0 1 0 6.28318"/>
+    <ROUTE fromNode="Clock" fromField="fraction_changed" toNode="Rot" toField="set_fraction"/>
+    <ROUTE fromNode="Rot" fromField="value_changed" toNode="Spinner" toField="set_rotation"/>
+  </Scene>
+</X3D>
