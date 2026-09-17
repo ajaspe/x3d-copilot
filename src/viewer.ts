@@ -64,7 +64,8 @@ export class Viewer {
       const scene = await this.browser.createX3DFromString(text);
       if (id !== this.loading) return { ok: true, errors: [], warnings: [], ms: 0 }; // superseded
       await this.browser.replaceWorld(scene);
-      await this.browser.nextFrame();
+      // nextFrame() never resolves while the tab is hidden (no requestAnimationFrame), so bound the wait
+      await Promise.race([this.browser.nextFrame(), sleep(1500)]);
       // give async resources (textures, Inline, fonts) a moment to report problems
       await sleep(250);
     } catch (e) {
@@ -91,7 +92,7 @@ export class Viewer {
 
   /** PNG data URL of the current view (X_ITE re-renders for this call). */
   async screenshot(maxWidth = 1024): Promise<string> {
-    await this.browser.nextFrame();
+    await Promise.race([this.browser.nextFrame(), sleep(1500)]);
     const dataUrl = this.canvas.toDataURL("image/png");
     return downscale(dataUrl, maxWidth);
   }
