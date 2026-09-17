@@ -97,30 +97,38 @@
     <dialog id="settings">
       <form method="dialog">
         <h2>AI settings</h2>
-        <p class="muted">
-          The copilot calls the Claude API directly from your browser. Your key is stored only in this browser's
-          <code>localStorage</code> and sent only to <code>api.anthropic.com</code>.
+        <p class="muted" id="set-help">
+          The copilot calls the model API directly from your browser. Your key is stored only in this browser's
+          <code>localStorage</code> and sent only to the provider's API host.
         </p>
-        <label>API key <input id="set-key" type="password" autocomplete="off" placeholder="sk-ant-…" /></label>
-        <label>Model
-          <select id="set-model">
-            <option value="claude-opus-5">Claude Opus 5 (default)</option>
-            <option value="claude-sonnet-5">Claude Sonnet 5 (faster, cheaper)</option>
-            <option value="claude-haiku-4-5">Claude Haiku 4.5 (fastest)</option>
+        <label>Provider
+          <select id="set-provider">
+            <option value="gemini">Google (Gemini)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
           </select>
         </label>
-        <label>Effort
+        <label>API key <input id="set-key" type="password" autocomplete="off" placeholder="…" />
+          <span class="muted small"><a id="set-key-link" href="#" target="_blank" rel="noopener">Get a key</a> · sent only to <code id="set-host"></code></span>
+        </label>
+        <label>Model
+          <span class="row">
+            <input id="set-model" type="text" list="model-list" autocomplete="off" spellcheck="false" />
+            <button type="button" id="set-fetch-models" title="Query the provider for the models your key can use">Fetch models</button>
+          </span>
+          <datalist id="model-list"></datalist>
+          <span class="muted small" id="set-model-note"></span>
+        </label>
+        <label>Reasoning effort
           <select id="set-effort">
-            <option value="">default (high)</option>
+            <option value="">provider default</option>
             <option value="low">low</option>
             <option value="medium">medium</option>
             <option value="high">high</option>
-            <option value="xhigh">xhigh</option>
+            <option value="xhigh">xhigh (Claude only)</option>
           </select>
         </label>
         <label class="check"><input type="checkbox" id="set-autoshot" checked /> Let the model look at a screenshot after each successful render</label>
-        <label class="check"><input type="checkbox" id="set-fallback" checked /> Server-side refusal fallback (beta)</label>
-        <label>Base URL (optional proxy) <input id="set-baseurl" type="text" placeholder="https://api.anthropic.com" /></label>
+        <label>Base URL (optional proxy) <input id="set-baseurl" type="text" placeholder="leave empty for the provider's default" /></label>
         <menu>
           <button value="cancel" class="ghost">Cancel</button>
           <button value="save" id="set-save">Save</button>

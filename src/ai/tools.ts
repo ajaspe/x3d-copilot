@@ -1,12 +1,12 @@
 /**
- * Tools the copilot can call. Each tool is a JSON-schema definition for the
- * Claude API plus an executor bound to the live application (editor, viewer,
- * validator). Executors return either text or a list of content blocks.
+ * Tools the copilot can call. Each tool is a JSON-schema definition (provider
+ * neutral) plus an executor bound to the live application (editor, viewer,
+ * validator).
  */
-import type Anthropic from "@anthropic-ai/sdk";
 import { describeNode, searchNodes, concreteNodesOf, uom } from "../spec/uom";
 import { formatIssues, countBySeverity, type Issue } from "../validation/issues";
 import type { RuntimeReport } from "../viewer";
+import type { ImageData, ToolDefinition } from "./types";
 
 export interface SceneReport {
   issues: Issue[];
@@ -25,10 +25,11 @@ export interface AppBridge {
   supportedNodes(): Set<string>;
 }
 
-export type ToolContent = string | Anthropic.ToolResultBlockParam["content"];
-
 export interface ToolExecResult {
-  content: ToolContent;
+  /** text returned to the model */
+  text: string;
+  /** images returned to the model */
+  images?: ImageData[];
   isError?: boolean;
   /** short human-readable summary for the chat UI */
   summary: string;
@@ -36,17 +37,17 @@ export interface ToolExecResult {
   image?: string;
 }
 
-export const toolDefinitions: Anthropic.Tool[] = [
+export const toolDefinitions: ToolDefinition[] = [
   {
     name: "get_scene",
     description: "Return the current X3D scene source exactly as shown in the editor (XML). Call this before editing an existing scene.",
-    input_schema: { type: "object", properties: {}, additionalProperties: false },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "replace_scene",
     description:
       "Replace the entire scene source with new X3D XML, then validate (lint + XSD + X_ITE render) and return the report. Use for new scenes or large rewrites. The document must be a complete <X3D> file.",
-    input_schema: {
+    inputSchema: {
       type: "object",
       properties: { x3d: { type: "string", description: "Complete X3D 4.0 XML document." } },
       required: ["x3d"],
@@ -57,7 +58,7 @@ export const toolDefinitions: Anthropic.Tool[] = [
     name: "edit_scene",
     description:
       "Apply one or more exact text replacements to the current scene source, then validate and render. Each `old` string must occur exactly once in the source (include enough surrounding context to make it unique). Use `old` = '' with `anchor_before` to insert text right before a unique anchor string, e.g. insert new nodes before '</Scene>'. Preferred over replace_scene for targeted changes.",
-    input_schema: {
+    inputSchema: {
       type: "object",
       properties: {
         edits: {
@@ -82,13 +83,13 @@ export const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "validate_scene",
     description: "Re-run all validators (well-formedness, semantic lint, XSD schema, X_ITE runtime) on the current scene and return the report without changing anything.",
-    input_schema: { type: "object", properties: {}, additionalProperties: false },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
   {
     name: "lookup_node",
     description:
       "Look up an X3D 4.0 node (or abstract type / statement) in the ISO spec database: fields with type, accessType, default, accepted child types, default containerField, component. Use whenever unsure about a field name, default or where a node may be placed.",
-    input_schema: {
+    inputSchema: {
       type: "object",
       properties: { name: { type: "string", description: "Node type name, e.g. PhysicalMaterial, Extrusion, X3DGeometryNode" } },
       required: ["name"],
@@ -98,7 +99,7 @@ export const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "search_nodes",
     description: "Search the X3D 4.0 node catalogue by keyword (name, description or component), or list all concrete nodes deriving from an abstract type (e.g. X3DGeometryNode, X3DLightNode, X3DInterpolatorNode).",
-    input_schema: {
+    inputSchema: {
       type: "object",
       properties: {
         query: { type: "string", description: "Keyword, e.g. 'texture', 'sensor', or an abstract type name like X3DGeometryNode" },
@@ -110,7 +111,7 @@ export const toolDefinitions: Anthropic.Tool[] = [
   {
     name: "screenshot",
     description: "Render the current scene from the active viewpoint and return a PNG image so you can check the visual result (framing, colours, visibility).",
-    input_schema: { type: "object", properties: {}, additionalProperties: false },
+    inputSchema: { type: "object", properties: {}, additionalProperties: false },
   },
 ];
 
@@ -177,55 +178,54 @@ export function createExecutor(app: AppBridge) {
     switch (name) {
       case "get_scene": {
         const s = app.getScene();
-        return { content: s, summary: `Read scene (${s.split("\n").length} lines)` };
+        return { text: s, summary: `Read scene (${s.split("\n").length} lines)` };
       }
       case "replace_scene": {
         const x3d = String(input.x3d ?? "");
-        if (!x3d.trim()) return { content: "Empty document.", isError: true, summary: "Empty replace rejected" };
+        if (!x3d.trim()) return { text: "Empty document.", isError: true, summary: "Empty replace rejected" };
         const report = await app.applyScene(x3d);
         const errs = countBySeverity(report.issues).error;
         return {
-          content: formatReport(report),
-          isError: false,
+          text: formatReport(report),
           summary: `Replaced scene · ${errs ? `${errs} error(s)` : "valid"}${report.runtime ? (report.runtime.ok ? " · rendered" : " · render failed") : ""}`,
         };
       }
       case "edit_scene": {
         const edits = (input.edits as { old: string; new: string; anchor_before?: string }[]) ?? [];
         const { text, error } = applyEdits(app.getScene(), edits);
-        if (error) return { content: error, isError: true, summary: `Edit failed: ${error.slice(0, 80)}` };
+        if (error) return { text: error, isError: true, summary: `Edit failed: ${error.slice(0, 80)}` };
         const report = await app.applyScene(text);
         const errs = countBySeverity(report.issues).error;
         return {
-          content: formatReport(report),
+          text: formatReport(report),
           summary: `Applied ${edits.length} edit(s) · ${errs ? `${errs} error(s)` : "valid"}${report.runtime ? (report.runtime.ok ? " · rendered" : " · render failed") : ""}`,
         };
       }
       case "validate_scene": {
         const report = await app.validate();
-        return { content: formatReport(report, { includeHints: true }), summary: "Validated scene" };
+        return { text: formatReport(report, { includeHints: true }), summary: "Validated scene" };
       }
       case "lookup_node": {
         const n = String(input.name ?? "").trim();
         const d = describeNode(n);
         if (!d) {
           const alt = searchNodes(n, 6).map((x) => x.name);
-          return { content: `No node named '${n}' in X3D 4.0.${alt.length ? ` Similar: ${alt.join(", ")}` : ""}`, isError: true, summary: `Lookup ${n}: not found` };
+          return { text: `No node named '${n}' in X3D 4.0.${alt.length ? ` Similar: ${alt.join(", ")}` : ""}`, isError: true, summary: `Lookup ${n}: not found` };
         }
         const supported = app.supportedNodes();
         const note = supported.size && uom.nodes[n] && !supported.has(n) ? `\nNOTE: ${n} is in the spec but NOT implemented by this X_ITE build; it will be ignored at render time.` : "";
-        return { content: d + note, summary: `Looked up ${n}` };
+        return { text: d + note, summary: `Looked up ${n}` };
       }
       case "search_nodes": {
         const q = String(input.query ?? "").trim();
         if (uom.abstract[q]) {
           const list = concreteNodesOf(q);
-          return { content: `Concrete nodes deriving from ${q} (${list.length}): ${list.join(", ")}`, summary: `Listed ${list.length} ${q} nodes` };
+          return { text: `Concrete nodes deriving from ${q} (${list.length}): ${list.join(", ")}`, summary: `Listed ${list.length} ${q} nodes` };
         }
         const res = searchNodes(q, 15);
-        if (!res.length) return { content: `No nodes match '${q}'.`, summary: `Search '${q}': nothing` };
+        if (!res.length) return { text: `No nodes match '${q}'.`, summary: `Search '${q}': nothing` };
         return {
-          content: res.map((r) => `${r.name} [${r.component}]${r.info ? ` - ${r.info}` : ""}`).join("\n"),
+          text: res.map((r) => `${r.name} [${r.component}]${r.info ? ` - ${r.info}` : ""}`).join("\n"),
           summary: `Search '${q}': ${res.length} result(s)`,
         };
       }
@@ -233,16 +233,14 @@ export function createExecutor(app: AppBridge) {
         const dataUrl = await app.screenshot();
         const b64 = dataUrl.split(",")[1] ?? "";
         return {
-          content: [
-            { type: "image", source: { type: "base64", media_type: "image/png", data: b64 } },
-            { type: "text", text: "Screenshot of the current view from the active viewpoint." },
-          ],
+          text: "Screenshot of the current view from the active viewpoint (attached image).",
+          images: [{ mimeType: "image/png", data: b64 }],
           summary: "Took a screenshot",
           image: dataUrl,
         };
       }
       default:
-        return { content: `Unknown tool ${name}`, isError: true, summary: `Unknown tool ${name}` };
+        return { text: `Unknown tool ${name}`, isError: true, summary: `Unknown tool ${name}` };
     }
   };
 }

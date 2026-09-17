@@ -6,6 +6,7 @@ import { unsupportedNodes } from "./validation/lint";
 import { Copilot, type AgentEvent, type AgentSettings } from "./ai/agent";
 import { createExecutor, type AppBridge, type SceneReport } from "./ai/tools";
 import { SUGGESTIONS } from "./ai/prompt";
+import { createProvider, DEFAULT_MODELS, PROVIDER_KEY_HELP, type Effort, type ProviderId } from "./ai";
 import type { RuntimeReport } from "./viewer";
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -15,24 +16,63 @@ const REPO_URL = "https://github.com/ajaspe/x3d-copilot";
 // ---------------------------------------------------------------------------
 // Settings
 // ---------------------------------------------------------------------------
-const SETTINGS_KEY = "x3d-copilot.settings.v1";
+const SETTINGS_KEY = "x3d-copilot.settings.v2";
+const LEGACY_SETTINGS_KEY = "x3d-copilot.settings.v1";
 const SCENE_KEY = "x3d-copilot.scene.v1";
 
-function loadSettings(): AgentSettings {
+interface StoredSettings {
+  provider: ProviderId;
+  keys: Record<ProviderId, string>;
+  models: Record<ProviderId, string>;
+  effort: Effort;
+  baseURL: Record<ProviderId, string>;
+  autoScreenshot: boolean;
+}
+
+function defaultSettings(): StoredSettings {
+  return {
+    provider: "gemini",
+    keys: { anthropic: "", gemini: "" },
+    models: { anthropic: DEFAULT_MODELS.anthropic[0].id, gemini: DEFAULT_MODELS.gemini[0].id },
+    effort: "",
+    baseURL: { anthropic: "", gemini: "" },
+    autoScreenshot: true,
+  };
+}
+
+function loadSettings(): StoredSettings {
+  const d = defaultSettings();
   try {
-    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}");
-    return { apiKey: s.apiKey ?? "", model: s.model ?? "claude-opus-5", effort: s.effort ?? "", baseURL: s.baseURL ?? "", refusalFallback: s.refusalFallback ?? true, ...s };
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if (raw) {
+      const s = JSON.parse(raw) as Partial<StoredSettings>;
+      return { ...d, ...s, keys: { ...d.keys, ...s.keys }, models: { ...d.models, ...s.models }, baseURL: { ...d.baseURL, ...s.baseURL } };
+    }
+    const legacy = localStorage.getItem(LEGACY_SETTINGS_KEY);
+    if (legacy) {
+      const s = JSON.parse(legacy);
+      if (s.apiKey) {
+        d.provider = "anthropic";
+        d.keys.anthropic = s.apiKey;
+        if (s.model) d.models.anthropic = s.model;
+        d.effort = s.effort ?? "";
+        d.baseURL.anthropic = s.baseURL ?? "";
+        d.autoScreenshot = s.autoScreenshot ?? true;
+      }
+    }
   } catch {
-    return { apiKey: "", model: "claude-opus-5", effort: "", baseURL: "", refusalFallback: true };
+    /* ignore */
   }
+  return d;
 }
-let settings = loadSettings();
-let autoScreenshot = true;
-try {
-  autoScreenshot = JSON.parse(localStorage.getItem(SETTINGS_KEY) ?? "{}").autoScreenshot ?? true;
-} catch {
-  /* ignore */
-}
+let stored = loadSettings();
+const agentSettings = (): AgentSettings => ({
+  provider: stored.provider,
+  apiKey: stored.keys[stored.provider] ?? "",
+  model: stored.models[stored.provider] ?? DEFAULT_MODELS[stored.provider][0].id,
+  effort: stored.effort,
+  baseURL: stored.baseURL[stored.provider] || undefined,
+});
 
 // ---------------------------------------------------------------------------
 // Core objects
@@ -196,9 +236,9 @@ function onAgentEvent(e: AgentEvent) {
       const summary = document.createElement("summary");
       summary.textContent = e.result.summary;
       details.appendChild(summary);
-      if (typeof e.result.content === "string" && e.name !== "get_scene") {
+      if (e.name !== "get_scene" && e.name !== "screenshot") {
         const pre = document.createElement("pre");
-        pre.textContent = e.result.content.slice(0, 4000);
+        pre.textContent = e.result.text.slice(0, 4000);
         details.appendChild(pre);
       }
       chip.appendChild(details);
@@ -246,7 +286,7 @@ function toolLabel(name: string, input: Record<string, unknown>): string {
   }
 }
 
-const copilot = new Copilot(() => settings, execute, onAgentEvent);
+const copilot = new Copilot(agentSettings, execute, onAgentEvent);
 
 const chatForm = $("#chat-form") as HTMLFormElement;
 const chatInput = $("#chat-input") as HTMLTextAreaElement;
@@ -264,7 +304,7 @@ chatForm.addEventListener("submit", async (ev) => {
       /* ignore */
     }
   }
-  const hint = autoScreenshot ? "" : "\n\n(Do not call the screenshot tool unless I ask for it.)";
+  const hint = stored.autoScreenshot ? "" : "\n\n(Do not call the screenshot tool unless I ask for it.)";
   await copilot.send(text + hint, shot);
 });
 chatInput.addEventListener("keydown", (ev) => {
@@ -296,31 +336,92 @@ for (const s of SUGGESTIONS.slice(0, 4)) {
 // Settings dialog
 // ---------------------------------------------------------------------------
 const dlg = $("#settings") as HTMLDialogElement;
+const setProvider = $("#set-provider") as HTMLSelectElement;
+const setKey = $("#set-key") as HTMLInputElement;
+const setModel = $("#set-model") as HTMLInputElement;
+const setEffort = $("#set-effort") as HTMLSelectElement;
+const setBaseUrl = $("#set-baseurl") as HTMLInputElement;
+const setAutoshot = $("#set-autoshot") as HTMLInputElement;
+const modelList = $("#model-list") as HTMLDataListElement;
+const modelNote = $("#set-model-note");
+/** Working copy while the dialog is open (per-provider fields swap as the provider changes). */
+let draft: StoredSettings = structuredClone(stored);
+
 function updateModelBadge() {
+  const s = agentSettings();
   const b = $("#model-badge");
-  b.textContent = settings.apiKey ? settings.model.replace("claude-", "") + (settings.effort ? ` · ${settings.effort}` : "") : "no API key";
-  b.className = "badge " + (settings.apiKey ? "ok" : "warn");
+  b.textContent = s.apiKey ? `${s.provider === "gemini" ? "gemini" : "claude"} · ${s.model.replace(/^(claude-|gemini-)/, "")}${s.effort ? ` · ${s.effort}` : ""}` : "no API key";
+  b.className = "badge " + (s.apiKey ? "ok" : "warn");
 }
+
+function fillModelList(p: ProviderId, models: { id: string; label: string }[]) {
+  modelList.innerHTML = "";
+  for (const m of models) {
+    const o = document.createElement("option");
+    o.value = m.id;
+    o.label = m.label;
+    o.textContent = m.label;
+    modelList.appendChild(o);
+  }
+  modelNote.textContent = `${models.length} model(s) for ${p === "gemini" ? "Gemini" : "Claude"}; type any model id or pick one.`;
+}
+
+function showProviderFields(p: ProviderId) {
+  const help = PROVIDER_KEY_HELP[p];
+  setKey.value = draft.keys[p] ?? "";
+  setKey.placeholder = help.placeholder;
+  ($("#set-key-link") as HTMLAnchorElement).href = help.url;
+  $("#set-host").textContent = help.host;
+  setModel.value = draft.models[p] || DEFAULT_MODELS[p][0].id;
+  setBaseUrl.value = draft.baseURL[p] ?? "";
+  fillModelList(p, DEFAULT_MODELS[p]);
+}
+
+function readProviderFields(p: ProviderId) {
+  draft.keys[p] = setKey.value.trim();
+  draft.models[p] = setModel.value.trim() || DEFAULT_MODELS[p][0].id;
+  draft.baseURL[p] = setBaseUrl.value.trim();
+}
+
 $("#btn-settings").addEventListener("click", () => {
-  ($("#set-key") as HTMLInputElement).value = settings.apiKey;
-  ($("#set-model") as HTMLSelectElement).value = settings.model;
-  ($("#set-effort") as HTMLSelectElement).value = settings.effort;
-  ($("#set-baseurl") as HTMLInputElement).value = settings.baseURL ?? "";
-  ($("#set-autoshot") as HTMLInputElement).checked = autoScreenshot;
-  ($("#set-fallback") as HTMLInputElement).checked = settings.refusalFallback;
+  draft = structuredClone(stored);
+  setProvider.value = draft.provider;
+  setEffort.value = draft.effort;
+  setAutoshot.checked = draft.autoScreenshot;
+  showProviderFields(draft.provider);
   dlg.showModal();
+});
+setProvider.addEventListener("change", () => {
+  readProviderFields(draft.provider);
+  draft.provider = setProvider.value as ProviderId;
+  showProviderFields(draft.provider);
+});
+$("#set-fetch-models").addEventListener("click", async () => {
+  const p = setProvider.value as ProviderId;
+  readProviderFields(p);
+  if (!draft.keys[p]) {
+    modelNote.textContent = "Enter an API key first.";
+    return;
+  }
+  modelNote.textContent = "Fetching models…";
+  try {
+    const provider = createProvider({ provider: p, apiKey: draft.keys[p], model: draft.models[p], effort: "", baseURL: draft.baseURL[p] || undefined });
+    const models = await provider.listModels();
+    fillModelList(p, models.length ? models : DEFAULT_MODELS[p]);
+    if (models.length && !models.some((m) => m.id === setModel.value)) modelNote.textContent += ` Current model '${setModel.value}' is not in the list.`;
+  } catch (e) {
+    const provider = createProvider({ provider: p, apiKey: draft.keys[p], model: "", effort: "" });
+    modelNote.textContent = `Could not list models: ${provider.describeError(e)}`;
+  }
 });
 dlg.addEventListener("close", () => {
   if (dlg.returnValue !== "save") return;
-  settings = {
-    apiKey: ($("#set-key") as HTMLInputElement).value.trim(),
-    model: ($("#set-model") as HTMLSelectElement).value,
-    effort: ($("#set-effort") as HTMLSelectElement).value as AgentSettings["effort"],
-    baseURL: ($("#set-baseurl") as HTMLInputElement).value.trim(),
-    refusalFallback: ($("#set-fallback") as HTMLInputElement).checked,
-  };
-  autoScreenshot = ($("#set-autoshot") as HTMLInputElement).checked;
-  localStorage.setItem(SETTINGS_KEY, JSON.stringify({ ...settings, autoScreenshot }));
+  readProviderFields(setProvider.value as ProviderId);
+  draft.provider = setProvider.value as ProviderId;
+  draft.effort = setEffort.value as Effort;
+  draft.autoScreenshot = setAutoshot.checked;
+  stored = draft;
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(stored));
   updateModelBadge();
 });
 updateModelBadge();

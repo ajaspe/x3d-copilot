@@ -1,18 +1,14 @@
 /**
- * The copilot agent: a streaming tool-use loop against the Claude API,
- * running directly in the browser (user-supplied key, stored locally).
+ * The copilot agent: a provider-neutral streaming tool-use loop running in
+ * the browser (user-supplied key, stored locally). Providers: Anthropic
+ * (Claude) and Google (Gemini) - see ./providers.
  */
-import Anthropic from "@anthropic-ai/sdk";
 import { SYSTEM_PROMPT } from "./prompt";
 import { toolDefinitions, type ToolExecResult } from "./tools";
+import { createProvider } from "./index";
+import type { ChatMessage, ContentBlock, ProviderSettings } from "./types";
 
-export interface AgentSettings {
-  apiKey: string;
-  model: string;
-  effort: "" | "low" | "medium" | "high" | "xhigh";
-  baseURL?: string;
-  refusalFallback: boolean;
-}
+export type AgentSettings = ProviderSettings;
 
 export type AgentEvent =
   | { type: "turn_start" }
@@ -27,7 +23,7 @@ const MAX_TOOL_ROUNDS = 16;
 const MAX_TOKENS = 32000;
 
 export class Copilot {
-  messages: Anthropic.MessageParam[] = [];
+  messages: ChatMessage[] = [];
   private controller: AbortController | null = null;
   busy = false;
 
@@ -49,22 +45,15 @@ export class Copilot {
     if (this.busy) return;
     const settings = this.getSettings();
     if (!settings.apiKey) {
-      this.emit({ type: "error", message: "No API key configured. Open Settings (⚙) and paste your Anthropic API key." });
+      this.emit({ type: "error", message: "No API key configured. Open Settings (⚙), choose a provider and paste your API key." });
       return;
     }
+    const provider = createProvider(settings);
     this.busy = true;
     this.controller = new AbortController();
-    const client = new Anthropic({
-      apiKey: settings.apiKey,
-      baseURL: settings.baseURL || undefined,
-      dangerouslyAllowBrowser: true,
-      maxRetries: 2,
-    });
 
-    const userContent: Anthropic.ContentBlockParam[] = [];
-    if (imageDataUrl) {
-      userContent.push({ type: "image", source: { type: "base64", media_type: "image/png", data: imageDataUrl.split(",")[1] ?? "" } });
-    }
+    const userContent: ContentBlock[] = [];
+    if (imageDataUrl) userContent.push({ type: "image", image: dataUrlToImage(imageDataUrl) });
     userContent.push({ type: "text", text });
     this.messages.push({ role: "user", content: userContent });
     this.emit({ type: "turn_start" });
@@ -73,72 +62,59 @@ export class Copilot {
 
     try {
       for (let round = 0; round < MAX_TOOL_ROUNDS; round++) {
-        const params: Anthropic.MessageStreamParams = {
+        const result = await provider.runTurn({
           model: settings.model,
-          max_tokens: MAX_TOKENS,
-          system: [{ type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } }],
+          system: SYSTEM_PROMPT,
           tools: toolDefinitions,
           messages: this.messages,
-        };
-        if (settings.effort) params.output_config = { effort: settings.effort };
+          effort: settings.effort,
+          maxTokens: MAX_TOKENS,
+          signal: this.controller.signal,
+          onText: (delta) => this.emit({ type: "text", delta }),
+        });
+        usage.input += result.usage.input;
+        usage.output += result.usage.output;
+        usage.cacheRead += result.usage.cacheRead;
+        this.messages.push(result.message);
 
-        const stream = client.messages.stream(params, { signal: this.controller.signal });
-        stream.on("text", (delta) => this.emit({ type: "text", delta }));
-        const message = await stream.finalMessage();
-
-        usage.input += message.usage.input_tokens;
-        usage.output += message.usage.output_tokens;
-        usage.cacheRead += message.usage.cache_read_input_tokens ?? 0;
-
-        this.messages.push({ role: "assistant", content: message.content });
-
-        if (message.stop_reason === "refusal") {
-          this.emit({ type: "stopped", reason: `The model declined this request${message.stop_details?.explanation ? `: ${message.stop_details.explanation}` : "."}` });
+        if (result.stop === "refusal") {
+          this.emit({ type: "stopped", reason: `The model declined this request${result.stopMessage ? `: ${result.stopMessage}` : "."}` });
           break;
         }
-        if (message.stop_reason === "max_tokens") {
+        if (result.stop === "max_tokens") {
           this.emit({ type: "stopped", reason: "Output limit reached; ask me to continue." });
           break;
         }
-        if (message.stop_reason === "pause_turn") continue;
+        if (result.stop === "other") {
+          this.emit({ type: "stopped", reason: result.stopMessage ?? "The model stopped unexpectedly." });
+          break;
+        }
 
-        const toolUses = message.content.filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use");
+        const toolUses = result.message.content.filter((b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use");
         if (toolUses.length === 0) break;
 
-        const results: Anthropic.ToolResultBlockParam[] = [];
+        const results: ContentBlock[] = [];
         for (const tu of toolUses) {
-          const input = (tu.input ?? {}) as Record<string, unknown>;
-          this.emit({ type: "tool_start", id: tu.id, name: tu.name, input });
-          let result: ToolExecResult;
+          this.emit({ type: "tool_start", id: tu.id, name: tu.name, input: tu.input });
+          let r: ToolExecResult;
           try {
-            result = await this.execute(tu.name, input);
+            r = await this.execute(tu.name, tu.input);
           } catch (e) {
-            result = { content: `Tool failed: ${(e as Error).message}`, isError: true, summary: `${tu.name} failed` };
+            r = { text: `Tool failed: ${(e as Error).message}`, isError: true, summary: `${tu.name} failed` };
           }
-          this.emit({ type: "tool_end", id: tu.id, name: tu.name, result });
-          results.push({ type: "tool_result", tool_use_id: tu.id, content: result.content, is_error: result.isError || undefined });
+          this.emit({ type: "tool_end", id: tu.id, name: tu.name, result: r });
+          results.push({ type: "tool_result", toolUseId: tu.id, name: tu.name, text: r.text, images: r.images, isError: r.isError || undefined });
         }
         this.messages.push({ role: "user", content: results });
-        if (round === MAX_TOOL_ROUNDS - 1) {
-          this.emit({ type: "stopped", reason: "Tool-call limit reached for this turn." });
-        }
+        if (round === MAX_TOOL_ROUNDS - 1) this.emit({ type: "stopped", reason: "Tool-call limit reached for this turn." });
       }
     } catch (e) {
       if (this.controller.signal.aborted) {
         this.emit({ type: "stopped", reason: "Stopped." });
         this.repairHistoryAfterAbort();
-      } else if (e instanceof Anthropic.AuthenticationError) {
-        this.emit({ type: "error", message: "Authentication failed: check your API key in Settings." });
-      } else if (e instanceof Anthropic.RateLimitError) {
-        this.emit({ type: "error", message: "Rate limited by the API; wait a moment and try again." });
-      } else if (e instanceof Anthropic.BadRequestError) {
-        this.emit({ type: "error", message: `Bad request: ${e.message}` });
-      } else if (e instanceof Anthropic.APIConnectionError) {
-        this.emit({ type: "error", message: `Could not reach the API (${e.message}). Direct browser access requires a key from console.anthropic.com or a CORS-enabled proxy in Settings.` });
-      } else if (e instanceof Anthropic.APIError) {
-        this.emit({ type: "error", message: `API error ${e.status ?? ""}: ${e.message}` });
       } else {
-        this.emit({ type: "error", message: (e as Error).message });
+        this.emit({ type: "error", message: provider.describeError(e) });
+        this.repairHistoryAfterAbort();
       }
     } finally {
       this.compactHistory();
@@ -148,16 +124,21 @@ export class Copilot {
     }
   }
 
-  /** If aborted mid tool-loop, make sure the history ends in a consistent state. */
+  /** Make sure the history ends in a consistent state after an abort or error. */
   private repairHistoryAfterAbort() {
     const last = this.messages[this.messages.length - 1];
     if (!last) return;
-    if (last.role === "assistant" && Array.isArray(last.content) && last.content.some((b) => b.type === "tool_use")) {
-      // answer dangling tool_use blocks so the next request is valid
-      const results: Anthropic.ToolResultBlockParam[] = last.content
-        .filter((b): b is Anthropic.ToolUseBlock => b.type === "tool_use")
-        .map((b) => ({ type: "tool_result", tool_use_id: b.id, content: "Cancelled by user.", is_error: true }));
-      this.messages.push({ role: "user", content: results });
+    if (last.role === "assistant") {
+      const pending = last.content.filter((b): b is Extract<ContentBlock, { type: "tool_use" }> => b.type === "tool_use");
+      if (pending.length) {
+        this.messages.push({
+          role: "user",
+          content: pending.map((b) => ({ type: "tool_result", toolUseId: b.id, name: b.name, text: "Cancelled by user.", isError: true })),
+        });
+      }
+    } else if (last.role === "user" && this.messages.length >= 1 && last.content.every((b) => b.type === "text" || b.type === "image")) {
+      // the request itself failed before any assistant turn: drop it so the user can retry cleanly
+      this.messages.pop();
     }
   }
 
@@ -169,32 +150,30 @@ export class Copilot {
     const keepFrom = Math.max(0, this.messages.length - 6);
     for (let i = 0; i < keepFrom; i++) {
       const m = this.messages[i];
-      if (m.role !== "user" || !Array.isArray(m.content)) continue;
       for (const block of m.content) {
         if (block.type === "image") {
-          (block as unknown as { type: string; text?: string }).type = "text";
+          (block as unknown as { type: string; text: string }).type = "text";
           (block as unknown as { text: string }).text = "[screenshot omitted]";
-          delete (block as unknown as { source?: unknown }).source;
-        }
-        if (block.type === "tool_result" && block.content) {
-          if (typeof block.content === "string") {
-            if (block.content.length > 1500) block.content = block.content.slice(0, 1200) + "\n…[older tool output truncated]";
-          } else if (Array.isArray(block.content)) {
-            block.content = block.content.map((c) => (c.type === "image" ? { type: "text", text: "[screenshot omitted]" } : c));
+          delete (block as unknown as { image?: unknown }).image;
+        } else if (block.type === "tool_result") {
+          if (block.text.length > 1500) block.text = block.text.slice(0, 1200) + "\n…[older tool output truncated]";
+          if (block.images?.length) {
+            block.images = undefined;
+            block.text += "\n[screenshot omitted]";
+          }
+        } else if (block.type === "tool_use" && block.name === "replace_scene") {
+          const inp = block.input as { x3d?: string };
+          if (inp.x3d && inp.x3d.length > 1500) {
+            inp.x3d = inp.x3d.slice(0, 800) + "\n…[older scene truncated; current scene available via get_scene]";
+            delete m.raw; // raw copy would still hold the full document
           }
         }
       }
     }
-    // tool_use inputs with a full document are also large
-    for (let i = 0; i < keepFrom; i++) {
-      const m = this.messages[i];
-      if (m.role !== "assistant" || !Array.isArray(m.content)) continue;
-      for (const block of m.content) {
-        if (block.type === "tool_use" && block.name === "replace_scene") {
-          const inp = block.input as { x3d?: string };
-          if (inp.x3d && inp.x3d.length > 1500) inp.x3d = inp.x3d.slice(0, 800) + "\n…[older scene truncated; current scene available via get_scene]";
-        }
-      }
-    }
   }
+}
+
+function dataUrlToImage(dataUrl: string) {
+  const m = /^data:([^;]+);base64,(.*)$/s.exec(dataUrl);
+  return { mimeType: m?.[1] ?? "image/png", data: m?.[2] ?? "" };
 }

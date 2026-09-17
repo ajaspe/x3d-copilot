@@ -173,6 +173,9 @@ dialog form { display: flex; flex-direction: column; gap: 10px; }
 dialog label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; }
 dialog label.check { flex-direction: row; align-items: center; }
 dialog menu { display: flex; justify-content: flex-end; gap: 8px; margin: 6px 0 0; padding: 0; }
+dialog .row { display: flex; gap: 6px; }
+dialog .row input { flex: 1; }
+dialog .small { font-size: 12px; }
 
 @media (max-width: 900px) {
   #workspace { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr 1fr; }
