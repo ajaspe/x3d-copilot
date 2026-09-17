@@ -75,7 +75,7 @@ async function runPipeline(text: string, opts: { render?: boolean } = { render: 
   currentIssues = issues;
   renderIssues();
   editor.setIssues(issues);
-  updateViewStatus(runtime, text);
+  updateViewStatus(runtime, text, wellFormed);
   try {
     localStorage.setItem(SCENE_KEY, text);
   } catch {
@@ -86,11 +86,11 @@ async function runPipeline(text: string, opts: { render?: boolean } = { render: 
 
 editor.onChange((text) => void runPipeline(text));
 
-function updateViewStatus(rt: RuntimeReport | null, text: string) {
+function updateViewStatus(rt: RuntimeReport | null, text: string, wellFormed: boolean) {
   const el = $("#view-status");
   if (!rt) {
-    el.textContent = "Not rendered: fix XML errors first";
-    el.classList.add("err");
+    el.textContent = wellFormed ? "Rendering…" : "Not rendered: fix XML errors first";
+    el.classList.toggle("err", !wellFormed);
     return;
   }
   el.classList.toggle("err", !rt.ok);
