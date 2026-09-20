@@ -60,13 +60,15 @@ export class SceneTools {
   private scene: X3DNS.X3DScene | null = null;
   private selected: number | null = null;
   private gizmo: AnyNode | null = null;
+  /** Group inserted in the parent's field: holds the camera sensor (parent frame) and the gizmo Transform */
+  private gizmoRoot: AnyNode | null = null;
   private gizmoParentField: any = null;
   private gizmoActive = 0;
   private lastGizmoRelease = 0;
   private cbKey = {};
   private dragStart: TransformState | null = null;
   private cameraPos: Vec3 = [0, 0, 10];
-  private handles: { node: AnyNode; axis: number; kind: "move" | "rotate"; alt: [AxisAngle, AxisAngle] }[] = [];
+  private handles: { node: AnyNode; axis: number; kind: "move" | "rotate"; alt: [AxisAngle, AxisAngle]; current: number }[] = [];
   modes = new Set<GizmoMode>(["move", "rotate", "scale"]);
   enabled = true;
 
@@ -85,6 +87,7 @@ export class SceneTools {
     this.scene = scene;
     this.selected = null;
     this.gizmo = null;
+    this.gizmoRoot = null;
     this.gizmoParentField = null;
     this.transforms = [];
     this.handles = [];
@@ -193,17 +196,18 @@ export class SceneTools {
   // gizmo construction
   // ---------------------------------------------------------------------------
   private removeGizmo() {
-    if (!this.gizmo) return;
+    if (!this.gizmoRoot) return;
     const field = this.gizmoParentField;
     let i = -1;
     for (let k = 0; k < field.length; k++) {
-      if (same(field[k], this.gizmo)) {
+      if (same(field[k], this.gizmoRoot)) {
         i = k;
         break;
       }
     }
     if (i >= 0) field.splice(i, 1);
     this.gizmo = null;
+    this.gizmoRoot = null;
     this.gizmoParentField = null;
     this.handles = [];
   }
@@ -216,18 +220,24 @@ export class SceneTools {
       n.setNodeUserData(USER_KEY, "gizmo");
       return n;
     };
+    const root = mk("Group");
     const g = mk("Transform");
+    this.gizmoRoot = root;
     this.gizmo = g;
 
-    // camera tracking for constant screen size + plane selection
+    // Camera tracking for constant screen size + plane selection. The sensor must live in the
+    // *parent's* frame (not inside the scaled gizmo), otherwise its reports depend on the
+    // gizmo scale and the update loop oscillates.
     const prox = mk("ProximitySensor");
     prox.size = new X.SFVec3f(1e6, 1e6, 1e6);
     prox.addFieldCallback(this.cbKey, "position_changed", (v: unknown) => {
       const p = v as X3DNS.SFVec3f;
-      this.cameraPos = [p.x, p.y, p.z];
-      this.syncGizmo();
+      const next: Vec3 = [p.x, p.y, p.z];
+      const moved = Math.hypot(next[0] - this.cameraPos[0], next[1] - this.cameraPos[1], next[2] - this.cameraPos[2]);
+      this.cameraPos = next;
+      if (moved > 1e-4) this.syncGizmo();
     });
-    g.children.push(prox);
+    root.children.push(prox, g);
 
     const material = (rgb: Vec3, alpha = 0) => {
       const app = mk("Appearance");
@@ -283,7 +293,7 @@ export class SceneTools {
         tip.children.push(tipShape);
         h.children.push(shaft, tip);
         g.children.push(h);
-        this.handles.push({ node: h, axis, kind: "move", alt: moveAlts[axis] });
+        this.handles.push({ node: h, axis, kind: "move", alt: moveAlts[axis], current: 0 });
         this.wirePlaneSensor(ps, (dx) => {
           const s = this.dragStart!;
           const t: Vec3 = [...s.translation] as Vec3;
@@ -312,7 +322,7 @@ export class SceneTools {
         ring.geometry = this.makeRing(mk, 1.35, 0.02);
         h.children.push(ring);
         g.children.push(h);
-        this.handles.push({ node: h, axis, kind: "rotate", alt: [rotAlts[axis], rotAlts[axis]] });
+        this.handles.push({ node: h, axis, kind: "rotate", alt: [rotAlts[axis], rotAlts[axis]], current: 0 });
         let start: TransformState | null = null;
         cs.addFieldCallback(this.cbKey, "isActive", (v: unknown) => {
           if (v) {
@@ -355,7 +365,7 @@ export class SceneTools {
       cubeShape.geometry = box;
       h.children.push(cubeShape);
       g.children.push(h);
-      this.handles.push({ node: h, axis: 0, kind: "move", alt: moveAlts[0] });
+      this.handles.push({ node: h, axis: 0, kind: "move", alt: moveAlts[0], current: 0 });
       this.wirePlaneSensor(ps, (dx) => {
         const s = this.dragStart!;
         const f = Math.max(0.01, 1 + dx / Math.max(1e-6, this.gizmoScale()));
@@ -366,7 +376,7 @@ export class SceneTools {
     // insert the gizmo next to the selected Transform, in the same frame
     const field = e.parent ? e.parent[e.parentField] : scene.rootNodes;
     this.gizmoParentField = field;
-    field.push(g);
+    field.push(root);
     this.syncGizmo();
   }
 
@@ -426,28 +436,28 @@ export class SceneTools {
     const e = this.transforms[this.selected];
     const t = e.node.translation;
     const origin: Vec3 = [t.x, t.y, t.z];
-    this.gizmo.translation = new X.SFVec3f(...origin);
+    const gt = this.gizmo.translation as X3DNS.SFVec3f;
+    if (Math.abs(gt.x - origin[0]) > 1e-9 || Math.abs(gt.y - origin[1]) > 1e-9 || Math.abs(gt.z - origin[2]) > 1e-9) {
+      this.gizmo.translation = new X.SFVec3f(...origin);
+    }
     const view: Vec3 = [this.cameraPos[0] - origin[0], this.cameraPos[1] - origin[1], this.cameraPos[2] - origin[2]];
     const dist = Math.hypot(...view) || 1;
     const s = dist * GIZMO_SCREEN_SIZE;
-    this.gizmo.scale = new X.SFVec3f(s, s, s);
-    // choose, per move handle, the alternative whose plane normal is most aligned with the view direction
+    const cs = this.gizmo.scale.x as number;
+    if (Math.abs(cs - s) / Math.max(cs, 1e-6) > 0.02) this.gizmo.scale = new X.SFVec3f(s, s, s);
+    // choose, per move handle, the alternative whose plane normal is most aligned with the view
+    // direction; only switch when the other plane is clearly better (hysteresis avoids flapping)
     for (const h of this.handles) {
       if (h.kind !== "move") continue;
-      let best = 0;
-      let bestDot = -1;
-      for (let k = 0; k < 2; k++) {
-        const normal = qrotate(axisAngleToQuat(h.alt[k]), [0, 0, 1]); // plane normal = local Z
-        const d = Math.abs((normal[0] * view[0] + normal[1] * view[1] + normal[2] * view[2]) / dist);
-        if (d > bestDot) {
-          bestDot = d;
-          best = k;
-        }
-      }
-      const cur = h.node.rotation as X3DNS.SFRotation;
-      const want = h.alt[best];
-      if (Math.abs(cur.angle - want[3]) > 1e-6 || Math.abs(cur.x - want[0]) > 1e-6 || Math.abs(cur.y - want[1]) > 1e-6 || Math.abs(cur.z - want[2]) > 1e-6) {
-        h.node.rotation = new X.SFRotation(...want);
+      const dots = h.alt.map((r) => {
+        const normal = qrotate(axisAngleToQuat(r), [0, 0, 1]); // plane normal = local Z
+        return Math.abs((normal[0] * view[0] + normal[1] * view[1] + normal[2] * view[2]) / dist);
+      });
+      const cur = h.current;
+      const other = 1 - cur;
+      if (dots[other] > dots[cur] + 0.15) {
+        h.current = other;
+        h.node.rotation = new X.SFRotation(...h.alt[other]);
       }
     }
   }
