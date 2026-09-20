@@ -7,6 +7,10 @@ import { Copilot, type AgentEvent, type AgentSettings } from "./ai/agent";
 import { createExecutor, type AppBridge, type SceneReport } from "./ai/tools";
 import { SUGGESTIONS } from "./ai/prompt";
 import { createProvider, DEFAULT_MODELS, PROVIDER_KEY_HELP, type Effort, type ProviderId } from "./ai";
+import { SceneTools, type TransformState } from "./select/gizmo";
+import { Inspector } from "./select/inspector";
+import { listTransforms, transformAtPos, buildTransformChanges, describeEntry, type TransformEntry } from "./select/sourceMap";
+import { fmtVec } from "./select/math";
 import type { RuntimeReport } from "./viewer";
 
 const $ = <T extends HTMLElement>(sel: string) => document.querySelector(sel) as T;
@@ -105,6 +109,7 @@ async function runPipeline(text: string, opts: { render?: boolean } = { render: 
     const missing = unsupportedNodes(text, viewer.supportedNodes());
     for (const n of missing) runtimeIssues.push({ severity: "warning", message: `<${n}> is valid X3D but not implemented by X_ITE ${viewer.version}; it will not render`, source: "runtime", rule: "runtime/unsupported-node" });
     currentRuntime = runtime;
+    attachSceneTools();
   } else if (!wellFormed) {
     runtimeIssues = [];
     currentRuntime = null;
@@ -125,6 +130,121 @@ async function runPipeline(text: string, opts: { render?: boolean } = { render: 
 }
 
 editor.onChange((text) => void runPipeline(text));
+
+// ---------------------------------------------------------------------------
+// Selection + transform gizmo
+// ---------------------------------------------------------------------------
+let sourceTransforms: TransformEntry[] = [];
+let selectedEntry: TransformEntry | null = null;
+let pendingReselect: number | null = null;
+
+const inspector = new Inspector($("#view-pane"), {
+  onChange(state, commit) {
+    if (tools.selection === null) return;
+    tools.setState(tools.selection, state);
+    onGizmoTransform(tools.selection, tools.getState(tools.selection)!, commit);
+  },
+  onDeselect: () => tools.select(null),
+  onSelectParent: selectParentTransform,
+  onGoToSource() {
+    if (selectedEntry) editor.revealRange(selectedEntry.tagFrom, selectedEntry.tagTo);
+  },
+  onModes: (modes) => tools.setModes(modes),
+  onAsk() {
+    chatInput.value = `About the selected ${selectedEntry ? describeEntry(selectedEntry) : "node"}: `;
+    chatInput.focus();
+  },
+});
+
+const tools = new SceneTools(viewer.X3D, {
+  onSelect(index) {
+    if (index === null) {
+      selectedEntry = null;
+      inspector.hide();
+      return;
+    }
+    sourceTransforms = listTransforms(editor.state);
+    const entry = sourceTransforms[index];
+    if (!entry) {
+      // source and scene out of sync (should not happen); ignore
+      selectedEntry = null;
+      inspector.hide();
+      return;
+    }
+    selectedEntry = entry;
+    const st = tools.getState(index)!;
+    inspector.show(describeEntry(entry), entry.line, st);
+    editor.revealRange(entry.tagFrom, entry.tagTo);
+  },
+  onTransform: onGizmoTransform,
+});
+
+function selectParentTransform() {
+  if (!selectedEntry) return;
+  sourceTransforms = listTransforms(editor.state);
+  const cur = sourceTransforms[selectedEntry.index] ?? selectedEntry;
+  if (cur.parent >= 0) tools.select(cur.parent);
+}
+
+function onGizmoTransform(index: number, state: TransformState, commit: boolean) {
+  inspector.update(state);
+  if (!commit) return;
+  sourceTransforms = listTransforms(editor.state);
+  const entry = sourceTransforms[index];
+  if (!entry) return;
+  if (entry.use) {
+    addMessage("system", `This is a USE reference to '${entry.use}'; edit the DEF-ed Transform instead.`);
+    return;
+  }
+  const changes = buildTransformChanges(entry, state);
+  editor.applyGizmoChanges(changes);
+}
+
+// gizmo edits: re-lint the text but keep the live scene (already up to date)
+editor.onGizmoChange((text) => {
+  pendingReselect = tools.selection;
+  void runPipeline(text, { render: false }).then(() => {
+    sourceTransforms = listTransforms(editor.state);
+    if (pendingReselect !== null && sourceTransforms[pendingReselect]) selectedEntry = sourceTransforms[pendingReselect];
+  });
+});
+
+// cursor in the editor selects the enclosing Transform
+editor.onCursor((pos) => {
+  if (!tools.enabled) return;
+  const list = listTransforms(editor.state);
+  const entry = transformAtPos(list, pos);
+  if (entry && entry.index !== tools.selection) {
+    sourceTransforms = list;
+    tools.select(entry.index);
+  }
+});
+
+function attachSceneTools() {
+  const prev = tools.selection;
+  try {
+    tools.attach(viewer.browser.currentScene);
+    if (prev !== null && prev < tools.count) tools.select(prev);
+    else if (prev !== null) tools.select(null);
+  } catch (e) {
+    console.warn("scene tools", e);
+  }
+}
+
+const btnSelect = $("#btn-select");
+btnSelect.addEventListener("click", () => {
+  const on = !tools.enabled;
+  tools.setEnabled(on);
+  btnSelect.classList.toggle("on", on);
+  if (currentRuntime?.ok) void runPipeline(editor.getValue()); // re-inject / remove selectors
+});
+
+function selectionContext(): string {
+  if (tools.selection === null || !selectedEntry) return "";
+  const st = tools.getState(tools.selection);
+  if (!st) return "";
+  return `\n\n[Context: the user has selected <${describeEntry(selectedEntry)}> at source line ${selectedEntry.line} (translation ${fmtVec(st.translation)}, rotation ${fmtVec(st.rotation, 5)}, scale ${fmtVec(st.scale)}). "This"/"it"/"the selected object" refers to that Transform.]`;
+}
 
 function updateViewStatus(rt: RuntimeReport | null, text: string, wellFormed: boolean) {
   const el = $("#view-status");
@@ -305,7 +425,7 @@ chatForm.addEventListener("submit", async (ev) => {
     }
   }
   const hint = stored.autoScreenshot ? "" : "\n\n(Do not call the screenshot tool unless I ask for it.)";
-  await copilot.send(text + hint, shot);
+  await copilot.send(text + selectionContext() + hint, shot);
 });
 chatInput.addEventListener("keydown", (ev) => {
   if (ev.key === "Enter" && !ev.shiftKey) {
@@ -550,6 +670,10 @@ $("#btn-format").addEventListener("click", async () => {
 });
 
 document.addEventListener("keydown", (ev) => {
+  const inField = (ev.target as HTMLElement).matches("input, textarea, .cm-content");
+  if (!inField && ev.key === "Escape" && tools.selection !== null) { ev.preventDefault(); tools.select(null); }
+  if (!inField && ev.key === "Backspace" && tools.selection !== null) { ev.preventDefault(); selectParentTransform(); }
+  if (!inField && ev.key.toLowerCase() === "s" && !ev.ctrlKey && !ev.metaKey) { ev.preventDefault(); btnSelect.click(); }
   if ((ev.ctrlKey || ev.metaKey) && ev.key === "Enter") { ev.preventDefault(); void runPipeline(editor.getValue()); }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "o") { ev.preventDefault(); fileInput.click(); }
   if ((ev.ctrlKey || ev.metaKey) && ev.key.toLowerCase() === "s") { ev.preventDefault(); download(`${sceneTitle(editor.getValue())}.x3d`, editor.getValue(), "model/x3d+xml"); }
@@ -605,4 +729,4 @@ for (const sp of document.querySelectorAll<HTMLElement>(".splitter")) {
 })();
 
 // Debug / automation handle (used by the browser smoke tests)
-Object.assign(window, { __x3dcopilot: { viewer, editor, validator, runPipeline, execute, copilot } });
+Object.assign(window, { __x3dcopilot: { viewer, editor, validator, runPipeline, execute, copilot, tools, inspector } });

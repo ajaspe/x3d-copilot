@@ -35,7 +35,7 @@ export class Viewer {
   private loading = 0;
   ready: Promise<void>;
 
-  constructor(private X3D: X3DModule, canvas: HTMLElement) {
+  constructor(readonly X3D: X3DModule, canvas: HTMLElement) {
     this.canvas = canvas as X3DNS.X3DCanvasElement;
     this.browser = X3D.getBrowser(this.canvas);
     this.ready = X3D();
