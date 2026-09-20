@@ -3,7 +3,7 @@
  * children and attributes come from the X3DUOM database) and diagnostics.
  */
 import { EditorView, basicSetup } from "codemirror";
-import { EditorState } from "@codemirror/state";
+import { EditorState, Annotation, type ChangeSpec } from "@codemirror/state";
 import { keymap } from "@codemirror/view";
 import { indentWithTab } from "@codemirror/commands";
 import { xml, type ElementSpec, type AttrSpec } from "@codemirror/lang-xml";
@@ -49,9 +49,14 @@ function buildElementSpecs(): ElementSpec[] {
   return specs;
 }
 
+/** Marks transactions produced by the 3D gizmo: the live scene already reflects them, so no reload. */
+export const fromGizmo = Annotation.define<boolean>();
+
 export class SceneEditor {
   readonly view: EditorView;
   private onChangeCb: ((text: string) => void) | null = null;
+  private onGizmoChangeCb: ((text: string) => void) | null = null;
+  private onCursorCb: ((pos: number) => void) | null = null;
   private timer: number | undefined;
   private silent = false;
 
@@ -69,7 +74,14 @@ export class SceneEditor {
           lintGutter(),
           EditorView.lineWrapping,
           EditorView.updateListener.of((u) => {
-            if (u.docChanged && !this.silent) this.scheduleChange();
+            if (u.docChanged && !this.silent) {
+              const gizmo = u.transactions.some((tr) => tr.annotation(fromGizmo));
+              if (gizmo) this.onGizmoChangeCb?.(this.getValue());
+              else this.scheduleChange();
+            }
+            if (u.selectionSet && !u.docChanged && u.transactions.some((tr) => tr.isUserEvent("select"))) {
+              this.onCursorCb?.(u.state.selection.main.head);
+            }
           }),
         ],
       }),
@@ -78,6 +90,30 @@ export class SceneEditor {
 
   onChange(cb: (text: string) => void) {
     this.onChangeCb = cb;
+  }
+
+  /** Text changes that came from the gizmo/inspector (scene already up to date). */
+  onGizmoChange(cb: (text: string) => void) {
+    this.onGizmoChangeCb = cb;
+  }
+
+  /** User moved the cursor (click/keyboard) without editing. */
+  onCursor(cb: (pos: number) => void) {
+    this.onCursorCb = cb;
+  }
+
+  /** Apply precise changes produced by the gizmo as one undoable step. */
+  applyGizmoChanges(changes: ChangeSpec[]) {
+    if (!changes.length) return;
+    this.view.dispatch({ changes, annotations: fromGizmo.of(true) });
+  }
+
+  get state() {
+    return this.view.state;
+  }
+
+  revealRange(from: number, to: number) {
+    this.view.dispatch({ selection: { anchor: from, head: Math.min(to, from + 1) }, scrollIntoView: true });
   }
 
   private scheduleChange() {
