@@ -106,7 +106,7 @@ export class Copilot {
           results.push({ type: "tool_result", toolUseId: tu.id, name: tu.name, text: r.text, images: r.images, isError: r.isError || undefined });
         }
         this.messages.push({ role: "user", content: results });
-        if (round === MAX_TOOL_ROUNDS - 1) this.emit({ type: "stopped", reason: "Tool-call limit reached for this turn." });
+        if (round === MAX_TOOL_ROUNDS - 1) this.emit({ type: "stopped", reason: "Reached the step limit for this turn; the scene is in its latest valid state. Send a follow-up to continue." });
       }
     } catch (e) {
       if (this.controller.signal.aborted) {

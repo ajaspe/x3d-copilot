@@ -49,10 +49,11 @@ segs.forEach((s, i) => {
   push(s.start, s.start + keep, 1);
   if (len - keep > 0.3) push(s.start + keep, next, K);
 });
-const end = cursor;
 const TITLE_SECONDS = 6;
 const lastId = Math.max(...narration.map((n) => n.id));
-const END_SECONDS = Math.max(8, secs(lastId) - (variant ? -2 : 8));
+// The last segment is the closing card: overlay it from that segment's start and end shortly after its narration.
+const end = newStart[lastId];
+const END_SECONDS = Math.max(secs(lastId) + 1.5, cursor - end);
 const total = end + END_SECONDS;
 
 // ---- ffmpeg inputs: 0 video, 1 title, 2 end, 3.. narration, then cards, then badge ------
