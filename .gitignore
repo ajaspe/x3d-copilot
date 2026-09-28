@@ -9,3 +9,9 @@ docs/submission/video/*.mp4
 docs/submission/tools/*.aux
 docs/submission/tools/*.log
 docs/submission/tools/*.out
+docs/submission/video/raw-ai/
+docs/submission/video/narration-ai/
+docs/submission/video/frames/
+docs/submission/ai/*.aux
+docs/submission/ai/*.log
+docs/submission/ai/*.out

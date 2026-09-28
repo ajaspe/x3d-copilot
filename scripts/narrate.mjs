@@ -13,11 +13,14 @@ import { dirname, join } from "node:path";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const vdir = join(here, "..", "docs", "submission", "video");
-const outDir = join(vdir, "narration");
+const vi = process.argv.indexOf("--variant");
+const variant = vi >= 0 ? process.argv[vi + 1] : "";
+const suffix = variant ? `-${variant}` : "";
+const outDir = join(vdir, `narration${suffix}`);
 mkdirSync(outDir, { recursive: true });
-const voice = process.argv[2] ?? "en-US-AndrewMultilingualNeural";
+const voice = process.env.TTS_VOICE ?? "en-US-AndrewMultilingualNeural";
 
-const md = readFileSync(join(vdir, "script.md"), "utf8");
+const md = readFileSync(join(vdir, `script${suffix}.md`), "utf8");
 const segments = [...md.matchAll(/^\*\*S(\d+)\.\*\*\s+([\s\S]*?)(?=^\*\*S\d+\.\*\*|\n## |$(?![\r\n]))/gm)].map((m) => ({ id: Number(m[1]), text: m[2].replace(/\s+/g, " ").trim() }));
 if (!segments.length) throw new Error("no narration segments found in script.md");
 
