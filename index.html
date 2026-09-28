@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>X3D Copilot</title>
+    <meta name="description" content="Browser-based X3D 4.0 editor with a spec-grounded AI co-author, live X_ITE rendering, schema and semantic validation, and multi-format import." />
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath fill='%2334d399' d='M16 2 3 9v14l13 7 13-7V9z'/%3E%3Cpath fill='%23065f46' d='M16 16 3 9v14l13 7z'/%3E%3Cpath fill='%2310b981' d='M16 16v14l13-7V9z'/%3E%3C/svg%3E" />
+    <link rel="stylesheet" href="./vendor/x_ite/x_ite.css" />
+    <link rel="stylesheet" href="./src/style.css" />
+  </head>
+  <body>
+    <header id="topbar">
+      <div class="brand">
+        <svg viewBox="0 0 32 32" width="22" height="22" aria-hidden="true"><path fill="#34d399" d="M16 2 3 9v14l13 7 13-7V9z"/><path fill="#065f46" d="M16 16 3 9v14l13 7z"/><path fill="#10b981" d="M16 16v14l13-7V9z"/></svg>
+        <span>X3D Copilot</span>
+        <span class="tag">X3D 4.0 · X_ITE</span>
+      </div>
+      <div class="toolbar">
+        <label class="sr-only" for="examples">Examples</label>
+        <select id="examples" title="Load an example scene"><option value="">Examples…</option></select>
+        <button id="btn-import" title="Import .x3d, .x3dv, .x3dj, .wrl, .gltf, .glb, .obj, .stl, .ply, .svg (Ctrl+O)">Import</button>
+        <input id="file-input" type="file" accept=".x3d,.x3dv,.x3dj,.x3dz,.wrl,.gltf,.glb,.obj,.stl,.ply,.svg,.json,.xml" hidden />
+        <div class="menu">
+          <button id="btn-export" title="Export">Export ▾</button>
+          <div class="menu-items" id="export-menu">
+            <button data-export="x3d">X3D (XML, as edited)</button>
+            <button data-export="x3d-canonical">X3D (XML, canonical from X_ITE)</button>
+            <button data-export="x3dv">X3D (Classic VRML .x3dv)</button>
+            <button data-export="x3dj">X3D (JSON .x3dj)</button>
+            <button data-export="png">Screenshot (PNG)</button>
+          </div>
+        </div>
+        <span class="sep"></span>
+        <button id="btn-select" class="on" title="Click objects in the view to select and transform them (S)">Select</button>
+        <button id="btn-viewall" title="Fit the scene in view (Home)">View all</button>
+        <select id="shading" title="Shading">
+          <option value="PHONG">Phong</option>
+          <option value="GOURAUD">Gouraud</option>
+          <option value="FLAT">Flat</option>
+          <option value="WIREFRAME">Wireframe</option>
+          <option value="POINT">Points</option>
+        </select>
+        <button id="btn-validate" title="Run all validators (Ctrl+Enter also re-renders)">Validate</button>
+        <span class="sep"></span>
+        <button id="btn-settings" title="AI settings">⚙ Settings</button>
+        <a class="gh" href="https://github.com/" id="gh-link" target="_blank" rel="noopener" title="Source on GitHub">GitHub</a>
+      </div>
+    </header>
+
+    <main id="workspace">
+      <aside id="chat-pane">
+        <div class="pane-head">
+          <span>Copilot</span>
+          <span id="model-badge" class="badge">no API key</span>
+          <button id="btn-clear-chat" class="ghost" title="Clear conversation">Clear</button>
+        </div>
+        <div id="chat-log" aria-live="polite"></div>
+        <div id="chat-suggestions"></div>
+        <form id="chat-form">
+          <textarea id="chat-input" rows="3" placeholder="Describe a scene or a change… e.g. “Add a rotating red torus above the box and a blue sky”"></textarea>
+          <div class="chat-actions">
+            <label class="check" title="Attach a screenshot of the current view so the model sees what you see"><input type="checkbox" id="chat-attach" /> attach view</label>
+            <button type="button" id="btn-stop" class="ghost" hidden>Stop</button>
+            <button type="submit" id="btn-send">Send</button>
+          </div>
+        </form>
+      </aside>
+
+      <div class="splitter" data-splitter="left" role="separator" aria-orientation="vertical"></div>
+
+      <section id="view-pane">
+        <x3d-canvas id="canvas" splashScreen="false" contextMenu="true" notifications="false" cache="true"></x3d-canvas>
+        <div id="view-status" class="overlay"></div>
+        <div id="drop-hint" class="overlay center hidden">Drop a 3D file to import it as X3D</div>
+      </section>
+
+      <div class="splitter" data-splitter="right" role="separator" aria-orientation="vertical"></div>
+
+      <section id="code-pane">
+        <div class="pane-head">
+          <span>Scene source <span class="muted">(.x3d)</span></span>
+          <span id="issue-summary" class="badge"></span>
+          <button id="btn-format" class="ghost" title="Reformat via X_ITE canonical serializer">Format</button>
+        </div>
+        <div id="editor"></div>
+        <div id="issues-pane">
+          <div class="pane-head small">
+            <span>Issues</span>
+            <label class="check"><input type="checkbox" id="show-schema" checked /> schema</label>
+            <label class="check"><input type="checkbox" id="show-info" checked /> hints</label>
+          </div>
+          <ul id="issue-list"></ul>
+        </div>
+      </section>
+    </main>
+
+    <dialog id="settings">
+      <form method="dialog">
+        <h2>AI settings</h2>
+        <p class="muted" id="set-help">
+          The copilot calls the model API directly from your browser. Your key is stored only in this browser's
+          <code>localStorage</code> and sent only to the provider's API host.
+        </p>
+        <label>Provider
+          <select id="set-provider">
+            <option value="gemini">Google (Gemini)</option>
+            <option value="anthropic">Anthropic (Claude)</option>
+          </select>
+        </label>
+        <label>API key <input id="set-key" type="password" autocomplete="off" placeholder="…" />
+          <span class="muted small"><a id="set-key-link" href="#" target="_blank" rel="noopener">Get a key</a> · sent only to <code id="set-host"></code></span>
+        </label>
+        <label>Model
+          <span class="row">
+            <input id="set-model" type="text" list="model-list" autocomplete="off" spellcheck="false" />
+            <button type="button" id="set-fetch-models" title="Query the provider for the models your key can use">Fetch models</button>
+          </span>
+          <datalist id="model-list"></datalist>
+          <span class="muted small" id="set-model-note"></span>
+        </label>
+        <label>Reasoning effort
+          <select id="set-effort">
+            <option value="">provider default</option>
+            <option value="low">low</option>
+            <option value="medium">medium</option>
+            <option value="high">high</option>
+            <option value="xhigh">xhigh (Claude only)</option>
+          </select>
+        </label>
+        <label class="check"><input type="checkbox" id="set-autoshot" checked /> Let the model look at a screenshot after each successful render</label>
+        <label>Base URL (optional proxy) <input id="set-baseurl" type="text" placeholder="leave empty for the provider's default" /></label>
+        <menu>
+          <button value="cancel" class="ghost">Cancel</button>
+          <button value="save" id="set-save">Save</button>
+        </menu>
+      </form>
+    </dialog>
+
+    <script type="module" src="./src/main.ts"></script>
+  </body>
+</html>
