@@ -54,7 +54,7 @@ async function card(name, title, subtitle, lines = []) {
   await p.close();
 }
 await card("title", "X3D Copilot", "A spec-grounded, AI-assisted X3D 4.0 editor that runs entirely in the browser", ["Web3D 2026 · Web3D/Metaverse Tools Competition", "Alberto Jaspe-Villanueva · KAUST"]);
-await card("end", "X3D Copilot", "Open source · MIT · 51 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "ajaspe.github.io/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
+await card("end", "X3D Copilot", "Open source · MIT · 51 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
 
 // ---- helpers -----------------------------------------------------------------------
 async function segment(id, fn) {
