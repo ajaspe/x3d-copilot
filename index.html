@@ -44,6 +44,7 @@
         <button id="btn-validate" title="Run all validators (Ctrl+Enter also re-renders)">Validate</button>
         <span class="sep"></span>
         <button id="btn-settings" title="AI settings">⚙ Settings</button>
+        <button id="btn-about" class="ghost" title="About X3D Copilot">About</button>
         <a class="gh" href="https://github.com/" id="gh-link" target="_blank" rel="noopener" title="Source on GitHub">GitHub</a>
       </div>
     </header>
@@ -134,6 +135,16 @@
           <button value="cancel" class="ghost">Cancel</button>
           <button value="save" id="set-save">Save</button>
         </menu>
+      </form>
+    </dialog>
+
+    <dialog id="about">
+      <form method="dialog">
+        <h2>X3D Copilot</h2>
+        <p>A spec-grounded, AI-assisted X3D 4.0 editor that runs entirely in the browser: live X_ITE rendering, validation against the official X3D 4.0 schema and the X3D Unified Object Model, an X3D-native transform gizmo, multi-format import, and an AI co-author that can only act through validated tools.</p>
+        <p>Created by <a href="https://albertojaspe.net" target="_blank" rel="noopener"><strong>Alberto Jaspe-Villanueva</strong></a>, King Abdullah University of Science and Technology (KAUST), as an entry to the <a href="https://web3d.siggraph.org/2026/web3d-2026-competitions/" target="_blank" rel="noopener">Web3D 2026 competitions</a>.</p>
+        <p class="muted small">Open source under the MIT license: <a id="about-repo" href="https://github.com/ajaspe/x3d-copilot" target="_blank" rel="noopener">github.com/ajaspe/x3d-copilot</a>. Built with <a href="https://create3000.github.io/x_ite/" target="_blank" rel="noopener">X_ITE</a> (Holger Seelig), libxml2-wasm, CodeMirror 6, and the Google Gen AI and Anthropic SDKs. X3D schema and X3DUOM © Web3D Consortium. <span id="about-version"></span></p>
+        <menu><button value="close">Close</button></menu>
       </form>
     </dialog>
 
