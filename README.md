@@ -2,7 +2,7 @@
 
 **A browser-based X3D 4.0 editor with a spec-grounded AI co-author, live X_ITE rendering, ISO schema + semantic validation, and multi-format import.**
 
-> Web3D 2026 competition entry (Web3D/Metaverse Tools · AI & Web3D Innovation). Live demo: _link added on deploy_.
+> Web3D 2026 competition entry (Web3D/Metaverse Tools · AI & Web3D Innovation). Live: https://albertojaspe.net/x3d-copilot/
 
 X3D Copilot lets you *talk* a scene into existence and keeps it honest: every change the AI (or you) makes is
 checked against the **official X3D 4.0 XML Schema**, a **semantic linter grounded in the X3D Unified Object Model**
