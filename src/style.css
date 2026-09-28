@@ -207,6 +207,7 @@ dialog menu { display: flex; justify-content: flex-end; gap: 8px; margin: 6px 0 
 dialog .row { display: flex; gap: 6px; }
 dialog .row input { flex: 1; }
 dialog .small { font-size: 12px; }
+dialog p { margin: 0; line-height: 1.5; }
 
 @media (max-width: 900px) {
   #workspace { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr 1fr; }

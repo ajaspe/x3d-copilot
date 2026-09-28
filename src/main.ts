@@ -92,6 +92,10 @@ let currentRuntime: RuntimeReport | null = null;
 let renderSeq = 0;
 
 $("#gh-link").setAttribute("href", REPO_URL);
+$("#btn-about").addEventListener("click", () => {
+  $("#about-version").textContent = `X_ITE ${viewer.version}.`;
+  ($("#about") as HTMLDialogElement).showModal();
+});
 
 // ---------------------------------------------------------------------------
 // Validation + rendering pipeline
