@@ -158,6 +158,7 @@ await segment(5, async () => {
   try {
     await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 });
     await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 });
+    timeline[timeline.length - 1].busyUntil = now();
   } catch {
     /* no key or timeout: continue */
   }
@@ -199,7 +200,7 @@ await segment(7, async () => {
 });
 
 await segment(8, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="fruit-bowl.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="still-life.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1200);
   await page.click("#chat-input");
@@ -208,6 +209,7 @@ await segment(8, async () => {
   await page.click("#btn-send");
   await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
   await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 }).catch(() => {});
+  timeline[timeline.length - 1].busyUntil = now();
   await sleep(1200);
   await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
   await orbit(120, 30, 50);

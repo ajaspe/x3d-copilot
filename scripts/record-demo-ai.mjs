@@ -84,6 +84,8 @@ async function ask(text) {
   await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
   await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 420000 }).catch(() => {});
   await page.evaluate(() => { const l = document.querySelector("#chat-log"); l.scrollTop = l.scrollHeight; });
+  const cur = timeline[timeline.length - 1];
+  if (cur) cur.busyUntil = now(); // assembler time-lapses only up to here
 }
 async function clickCanvasCenter(dx = 0, dy = 0) {
   const box = await page.locator("#canvas").boundingBox();
