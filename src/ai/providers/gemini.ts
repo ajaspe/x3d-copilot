@@ -116,6 +116,7 @@ export class GeminiProvider implements Provider {
       if (e.status === 400 && /API key/i.test(e.message)) return "Authentication failed: check your Gemini API key in Settings.";
       if (e.status === 401 || e.status === 403) return `Gemini rejected the key or the request (${e.status}): ${shorten(e.message)}`;
       if (e.status === 404) return `Model not found: ${shorten(e.message)}. Pick another model in Settings (use “Fetch models”).`;
+      if (e.status === 402) return "Gemini billing: the prepaid credits for this API key are depleted. Top up the project in Google AI Studio (aistudio.google.com → your project → billing) or use another key.";
       if (e.status === 429) return "Rate limited by the Gemini API (quota); wait a moment and try again.";
       return `Gemini API error ${e.status}: ${shorten(e.message)}`;
     }

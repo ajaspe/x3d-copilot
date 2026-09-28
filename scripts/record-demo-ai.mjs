@@ -86,6 +86,12 @@ async function ask(text) {
   await page.evaluate(() => { const l = document.querySelector("#chat-log"); l.scrollTop = l.scrollHeight; });
   const cur = timeline[timeline.length - 1];
   if (cur) cur.busyUntil = now(); // assembler time-lapses only up to here
+  const apiError = await page.evaluate(() => [...document.querySelectorAll("#chat-log .msg.system")].map((m) => m.textContent).filter((t) => /API error|billing|Authentication failed|Rate limited/.test(t)).pop() ?? null);
+  if (apiError) {
+    console.error("MODEL ERROR: " + apiError.slice(0, 200));
+    process.exitCode = 2;
+    throw new Error("model API error; aborting recording");
+  }
 }
 async function clickCanvasCenter(dx = 0, dy = 0) {
   const box = await page.locator("#canvas").boundingBox();
@@ -112,7 +118,7 @@ await segment(2, async () => {
   await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="asteroid-b612.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Make a scene inspired by The Little Prince: a tiny planet floating among stars, with a small house and a little boy standing on it. Everything on the planet must stand on its surface, aligned with the surface normal. Give the house a door I can animate later, and add a viewpoint that frames the whole planet.");
+  await ask("Make a scene inspired by The Little Prince: a tiny planet floating among stars, with a small house and a little boy standing on it. Everything on the planet must stand on its surface, aligned with the surface normal. Give the house a door (a Transform named Door) so I can animate it later, and add a viewpoint that frames the whole planet.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(90, 20, 50);
@@ -146,7 +152,7 @@ await segment(5, async () => {
   await bindOrViewAll("DoorView");
   await sleep(2500);
   // verify the door really animates: read its rotation through the SAI around each click; if the click misses, try nearby spots
-  const doorAngle = () => page.evaluate(() => { try { const s = window.__x3dcopilot.viewer.browser.currentScene; const d = s.getNamedNode("Door"); return Math.round(d.rotation.angle * 1000) / 1000; } catch { return null; } });
+  const doorAngle = () => page.evaluate(() => { try { const s = window.__x3dcopilot.viewer.browser.currentScene; const src = window.__x3dcopilot.editor.getValue(); const names = ["Door", ...[...src.matchAll(/<Transform[^>]*DEF="([^"]*[Dd]oor[^"]*)"/g)].map((m) => m[1])]; for (const n of names) { try { const d = s.getNamedNode(n); if (d && d.rotation) return Math.round(d.rotation.angle * 1000) / 1000; } catch {} } return null; } catch { return null; } });
   const spots = [[0, 0], [0, 40], [0, -40], [30, 0], [-30, 0]];
   let hit = null;
   for (const [dx, dy] of spots) {
