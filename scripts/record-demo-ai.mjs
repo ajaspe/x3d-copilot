@@ -112,7 +112,7 @@ await segment(2, async () => {
   await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="asteroid-b612.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Create a scene inspired by The Little Prince: a tiny planet (Sphere radius 3, DEF='Planet', warm ochre colour) floating in a black sky full of stars (a PointSet of ~400 random white points on a large sphere, plus a Background with a very dark sky). On top of the planet stands a small house (DEF='House'): a Box body, a Cone roof, a small chimney, and a door made as a separate Transform DEF='Door' hinged at its left edge (put the Box door inside a Transform whose center/translation lets it rotate about the hinge), the door facing +Z. Next to the house a small boy (DEF='Boy') built from primitives: a Sphere head with golden Cone hair, a Cylinder body in green, small legs, and a long scarf (thin Box) fluttering with a slow rotation animation. Two Viewpoints: DEF='Main' framing the whole planet from the front, and DEF='DoorView' close up, exactly centred on the door, looking straight at it from +Z. Keep it under 150 lines.");
+  await ask("Make a scene inspired by The Little Prince: a tiny planet floating among stars, with a small house and a little boy standing on it. Everything on the planet must stand on its surface, aligned with the surface normal. Give the house a door I can animate later, and add a viewpoint that frames the whole planet.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(90, 20, 50);
@@ -121,7 +121,7 @@ await segment(2, async () => {
 
 // S3: Billboard sign
 await segment(3, async () => {
-  await ask("Add a sign above the house that always faces the camera: a Billboard with axisOfRotation 0 0 0 containing a Text node reading 'Asteroid B-612' with a SANS bold FontStyle, cream colour, size about 0.6, floating 1.5 m above the roof. Do not change anything else.");
+  await ask("Add a sign above the house that always faces the camera, reading 'Asteroid B-612'.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(-140, 10, 60);
@@ -132,7 +132,7 @@ await segment(3, async () => {
 
 // S4: cartoon look
 await segment(4, async () => {
-  await ask("Give the scene a cartoon look: flat, vivid cel-shaded colours and dark outlines. Preferred approach: for the planet, house and boy, use UnlitMaterial or a two-tone look, and add outlines by wrapping each main shape with a slightly larger copy (scale about 1.04) rendered with a black UnlitMaterial and inverted faces (ccw='false' where the geometry supports it, or solid='true' with negative scale), so silhouettes get a dark edge. Keep the stars, the sign, the door hinge structure and all DEF names unchanged. Validate and take a screenshot.");
+  await ask("Give it a cartoon look: flat vivid colours with dark outlines.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(70, 10, 40);
@@ -141,12 +141,28 @@ await segment(4, async () => {
 
 // S5: click the door to open it (toggle)
 await segment(5, async () => {
-  await ask("Add interaction: clicking the door 'Door' swings it open by 100 degrees around its hinge over 1 second, and clicking it again closes it. Use a TouchSensor in the door Transform, a BooleanToggle (or an IntegerSequencer) plus a TimeSensor and an OrientationInterpolator with ROUTEs. Keep DoorView exactly centred on the door.");
+  await ask("When I click the door, it should swing open, and close again on the next click. Also add a viewpoint DEF='DoorView' right in front of the door, centred on it, so I can click it easily.");
   await sleep(1000);
   await bindOrViewAll("DoorView");
   await sleep(2500);
-  for (let i = 0; i < 4; i++) {
-    await clickCanvasCenter(0, 0);
+  // verify the door really animates: read its rotation through the SAI around each click; if the click misses, try nearby spots
+  const doorAngle = () => page.evaluate(() => { try { const s = window.__x3dcopilot.viewer.browser.currentScene; const d = s.getNamedNode("Door"); return Math.round(d.rotation.angle * 1000) / 1000; } catch { return null; } });
+  const spots = [[0, 0], [0, 40], [0, -40], [30, 0], [-30, 0]];
+  let hit = null;
+  for (const [dx, dy] of spots) {
+    const before = await doorAngle();
+    await clickCanvasCenter(dx, dy);
+    await sleep(1500);
+    const after = await doorAngle();
+    console.log(door click at (${dx},${dy}): angle ${before} -> ${after});
+    if (before !== null && after !== null && Math.abs(after - before) > 0.05) { hit = [dx, dy]; break; }
+    await sleep(1800);
+  }
+  timeline[timeline.length - 1].doorHit = hit;
+  const [hx, hy] = hit ?? [0, 0];
+  await sleep(2000);
+  for (let i = 0; i < 3; i++) {
+    await clickCanvasCenter(hx, hy);
     await sleep(3200);
   }
   await bindOrViewAll("Main");
