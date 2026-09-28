@@ -86,6 +86,8 @@ async function ask(text) {
   await page.evaluate(() => { const l = document.querySelector("#chat-log"); l.scrollTop = l.scrollHeight; });
   const cur = timeline[timeline.length - 1];
   if (cur) cur.busyUntil = now(); // assembler time-lapses only up to here
+  // keep the scene after each turn for post-mortems
+  try { writeFileSync(join(raw, "scene-S" + (cur ? cur.id : "x") + ".x3d"), await page.evaluate(() => window.__x3dcopilot.editor.getValue())); } catch {}
   const apiError = await page.evaluate(() => [...document.querySelectorAll("#chat-log .msg.system")].map((m) => m.textContent).filter((t) => /API error|billing|Authentication failed|Rate limited/.test(t)).pop() ?? null);
   if (apiError) {
     console.error("MODEL ERROR: " + apiError.slice(0, 200));
@@ -121,8 +123,8 @@ await segment(2, async () => {
   await ask("Make a scene inspired by The Little Prince: a tiny planet floating among stars, with a small house and a little boy standing on it. Everything on the planet must stand on its surface, aligned with the surface normal. Give the house a door (a Transform named Door) so I can animate it later, and add a viewpoint that frames the whole planet.");
   await sleep(1000);
   await bindOrViewAll("Main");
-  await orbit(90, 20, 50);
-  await sleep(1500);
+  await orbit(90, 20, 45);
+  await sleep(700);
 });
 
 // S3: Billboard sign
@@ -130,10 +132,10 @@ await segment(3, async () => {
   await ask("Add a sign above the house that always faces the camera, reading 'Asteroid B-612'.");
   await sleep(1000);
   await bindOrViewAll("Main");
-  await orbit(-140, 10, 60);
+  await orbit(-140, 10, 50);
+  await sleep(300);
+  await orbit(140, -10, 50);
   await sleep(600);
-  await orbit(140, -10, 60);
-  await sleep(1200);
 });
 
 // S4: cartoon look
@@ -141,42 +143,44 @@ await segment(4, async () => {
   await ask("Give it a cartoon look: flat vivid colours with dark outlines.");
   await sleep(1000);
   await bindOrViewAll("Main");
-  await orbit(70, 10, 40);
-  await sleep(2000);
+  await orbit(70, 10, 35);
+  await sleep(900);
 });
 
 // S5: click the door to open it (toggle)
 await segment(5, async () => {
   await ask("When I click the door, it should swing open, and close again on the next click. Also add a viewpoint DEF='DoorView' right in front of the door, centred on it, so I can click it easily.");
-  await sleep(1000);
+  await sleep(800);
+  // selection off for this segment: clicks must only reach the scene's own sensors
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(false));
   await bindOrViewAll("DoorView");
-  await sleep(2500);
-  // verify the door really animates: read its rotation through the SAI around each click; if the click misses, try nearby spots
+  await sleep(2000);
+  // Find the door on screen by probing a vertical line of clicks and watching the door's rotation through the SAI.
   const doorAngle = () => page.evaluate(() => { try { const s = window.__x3dcopilot.viewer.browser.currentScene; const src = window.__x3dcopilot.editor.getValue(); const names = ["Door", ...[...src.matchAll(/<Transform[^>]*DEF="([^"]*[Dd]oor[^"]*)"/g)].map((m) => m[1])]; for (const n of names) { try { const d = s.getNamedNode(n); if (d && d.rotation) return Math.round(d.rotation.angle * 1000) / 1000; } catch {} } return null; } catch { return null; } });
-  const spots = [[0, 0], [0, 40], [0, -40], [30, 0], [-30, 0]];
   let hit = null;
-  for (const [dx, dy] of spots) {
+  const offsets = [0, 120, 240, -120, 60, 180, 300, -60, -240, 360];
+  for (const dy of offsets) {
     const before = await doorAngle();
-    await clickCanvasCenter(dx, dy);
-    await sleep(1500);
+    await clickCanvasCenter(0, dy);
+    await sleep(1400);
     const after = await doorAngle();
-    console.log("door click at (" + dx + "," + dy + "): angle " + before + " -> " + after);
-    if (before !== null && after !== null && Math.abs(after - before) > 0.05) { hit = [dx, dy]; break; }
-    await sleep(1800);
+    console.log("door probe dy=" + dy + ": angle " + before + " -> " + after);
+    if (before !== null && after !== null && Math.abs(after - before) > 0.05) { hit = [0, dy]; break; }
   }
   timeline[timeline.length - 1].doorHit = hit;
+  timeline[timeline.length - 1].busyUntil = now(); // probing is hidden in the time-lapse
+  if (hit) await sleep(2200); // let the door settle (opened by the probe) before filming
   const [hx, hy] = hit ?? [0, 0];
-  await sleep(2000);
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     await clickCanvasCenter(hx, hy);
-    await sleep(3200);
+    await sleep(2800);
   }
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(true));
   await bindOrViewAll("Main");
-  await sleep(1500);
-  await orbit(60, 10, 30);
-  await sleep(1500);
+  await sleep(1200);
+  await orbit(50, 10, 25);
+  await sleep(800);
 });
-
 await segment(6, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(3000);
