@@ -45,6 +45,16 @@ const VISIT_KEY = "x3d-copilot-visit";
 const GIZMO_SCREEN_SIZE = 0.16; // fraction of the view distance
 const POINTING_SENSORS = new Set(["TouchSensor", "PlaneSensor", "CylinderSensor", "SphereSensor"]);
 
+/** True if a grouping node directly contains an authored pointing-device sensor. */
+function hasPointingSensor(node: AnyNode): boolean {
+  try {
+    const kids = node.children ? Array.from(node.children as Iterable<AnyNode>) : [];
+    return kids.some((k) => k && !k.getNodeUserData(USER_KEY) && POINTING_SENSORS.has(k.getNodeTypeName()));
+  } catch {
+    return false;
+  }
+}
+
 /** SFNode wrappers may be distinct objects for the same node; compare by value. */
 function same(a: AnyNode | null | undefined, b: AnyNode | null | undefined): boolean {
   if (a === b) return true;
@@ -104,7 +114,7 @@ export class SceneTools {
     this.transforms = [];
     this.handles = [];
     const token = Symbol("visit");
-    const visit = (node: AnyNode, parent: AnyNode | null, field: string) => {
+    const visit = (node: AnyNode, parent: AnyNode | null, field: string, underSensor: boolean) => {
       if (!node) return;
       const typeName = node.getNodeTypeName();
       if (node.getNodeUserData(USER_KEY)) return; // our own injected nodes
@@ -113,7 +123,10 @@ export class SceneTools {
       }
       if (node.getNodeUserData(VISIT_KEY) === token) return; // USE: count it but do not descend twice
       node.setNodeUserData(VISIT_KEY, token);
-      if (typeName === "Transform" && this.enabled) this.injectSelector(node);
+      // An authored pointing-device sensor owns clicks for its whole subtree (the innermost sensor
+      // wins in X3D), so no selection sensors are injected there; the editor cursor still selects.
+      if (!underSensor && hasPointingSensor(node)) underSensor = true;
+      if (typeName === "Transform" && this.enabled && !underSensor) this.injectSelector(node);
       if (node.getNodeType().includes(this.X3D.X3DConstants.X3DPrototypeInstance)) return;
       if (typeName === "Inline") return;
       const defs = node.getFieldDefinitions();
@@ -124,22 +137,18 @@ export class SceneTools {
           if (!arr || !arr.length) continue;
           // copy: injecting sensors mutates children while iterating
           const items = Array.from(arr as unknown as Iterable<AnyNode>);
-          for (const c of items) visit(c, node, d.name);
+          for (const c of items) visit(c, node, d.name, underSensor);
         } else if (d.dataType === this.X3D.X3DConstants.SFNode && d.name !== "metadata") {
           const c = node[d.name] as AnyNode | null;
-          if (c) visit(c, node, d.name);
+          if (c) visit(c, node, d.name, underSensor);
         }
       }
     };
     const roots = Array.from(scene.rootNodes as unknown as Iterable<AnyNode>);
-    for (const r of roots) visit(r, null, "rootNodes");
+    for (const r of roots) visit(r, null, "rootNodes", false);
   }
 
   private injectSelector(t: AnyNode) {
-    // If the author already put a pointing-device sensor here, clicks belong to the scene's
-    // own interaction; the Transform stays selectable from the editor cursor.
-    const kids = Array.from((t.children ?? []) as Iterable<AnyNode>);
-    if (kids.some((k) => k && POINTING_SENSORS.has(k.getNodeTypeName()))) return;
     const ts = this.scene!.createNode("TouchSensor") as AnyNode;
     ts.setNodeUserData(USER_KEY, "selector");
     ts.description = "Click to select this Transform";
