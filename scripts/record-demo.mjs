@@ -102,9 +102,11 @@ await page.waitForFunction(() => window.__x3dcopilot.validator.schemaReady, null
 await segment(1, async () => {
   await loadExample("pbr-materials.x3d");
   await sleep(5000); // title card covers the first seconds
-  await orbit(220, 60, 60);
+  await orbit(140, 40, 60);
   await sleep(800);
-  await orbit(-260, -40, 60);
+  await orbit(-140, -40, 60);
+  await sleep(600);
+  await page.click("#btn-viewall");
 });
 
 await segment(2, async () => {
@@ -118,11 +120,7 @@ await segment(2, async () => {
   await sleep(800);
   await page.click("#btn-viewall");
   await sleep(1500);
-  // show autocompletion: click at the end of a line and type "<Sph"
-  await page.click("#editor .cm-content");
-  await page.keyboard.press("Control+End");
-  await sleep(300);
-  await page.keyboard.press("Control+Z"); // no-op guard
+  await orbit(-120, 30, 50);
 });
 
 await segment(3, async () => {

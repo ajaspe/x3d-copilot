@@ -3,6 +3,7 @@ import { SceneEditor } from "./editor";
 import { Validator } from "./validation";
 import { countBySeverity, type Issue } from "./validation/issues";
 import { unsupportedNodes } from "./validation/lint";
+import { downgradeTo40 } from "./validation/downgrade";
 import { Copilot, type AgentEvent, type AgentSettings } from "./ai/agent";
 import { createExecutor, type AppBridge, type SceneReport } from "./ai/tools";
 import { SUGGESTIONS } from "./ai/prompt";
@@ -570,6 +571,7 @@ async function loadExampleIndex(): Promise<ExampleEntry[]> {
 async function loadExample(file: string) {
   const res = await fetch(`${BASE}examples/${file}`);
   const text = await res.text();
+  tools.select(null);
   editor.setValue(text, { silent: true });
   await runPipeline(text);
   viewer.viewAll();
@@ -594,9 +596,12 @@ async function importFile(file: File) {
       text = await file.text();
     } else {
       status.textContent = `Converting ${file.name} to X3D via X_ITE…`;
-      text = await viewer.convertFileToX3D(file);
-      addMessage("system", `Imported ${file.name} and converted it to X3D XML (${text.split("\n").length} lines) using X_ITE's ${name.split(".").pop()?.toUpperCase()} importer.`);
+      const converted = downgradeTo40(await viewer.convertFileToX3D(file));
+      text = converted.xml;
+      const dropped = converted.removed.length ? ` Dropped ${converted.removed.map((r) => `${r.node}.${r.attr}`).join(", ")} (X3D 4.1 only).` : "";
+      addMessage("system", `Imported ${file.name} and converted it to X3D 4.0 XML (${text.split("\n").length} lines) using X_ITE's ${name.split(".").pop()?.toUpperCase()} importer.${dropped}`);
     }
+    tools.select(null);
     editor.setValue(text, { silent: true });
     await runPipeline(text);
     viewer.viewAll();
@@ -661,7 +666,8 @@ $("#btn-validate").addEventListener("click", () => void runPipeline(editor.getVa
 $("#btn-format").addEventListener("click", async () => {
   if (currentRuntime && !currentRuntime.ok) return addMessage("system", "Fix render errors before formatting (the canonical form comes from X_ITE's loaded scene).");
   try {
-    const canon = viewer.toXML();
+    const canon = downgradeTo40(viewer.toXML()).xml;
+    tools.select(null);
     editor.setValue(canon, { silent: true });
     await runPipeline(canon);
   } catch (e) {
