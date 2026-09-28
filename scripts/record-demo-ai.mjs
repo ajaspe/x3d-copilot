@@ -66,7 +66,8 @@ async function loadExample(file) {
 }
 async function orbit(dx, dy, steps = 40) {
   const box = await page.locator("#canvas").boundingBox();
-  const cx = box.x + box.width / 2, cy = box.y + box.height / 2;
+  // start the drag away from the centre so it never ends over an object (which would read as a click)
+  const cx = box.x + box.width * 0.82, cy = box.y + box.height * 0.18;
   await page.mouse.move(cx, cy);
   await page.mouse.down();
   for (let i = 1; i <= steps; i++) {

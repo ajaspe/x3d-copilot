@@ -72,8 +72,19 @@ export class SceneTools {
   private handles: { node: AnyNode; axis: number; kind: "move" | "rotate"; alt: [AxisAngle, AxisAngle]; current: number }[] = [];
   modes = new Set<GizmoMode>(["move", "rotate", "scale"]);
   enabled = true;
+  /** true when the last pointer press moved more than a few pixels before release (a drag, not a click) */
+  private pointerMoved = false;
+  private pressAt: { x: number; y: number } | null = null;
 
-  constructor(private X3D: X3DModule, private events: SceneToolsEvents) {}
+  constructor(private X3D: X3DModule, private events: SceneToolsEvents) {
+    window.addEventListener("pointerdown", (e) => {
+      this.pressAt = { x: e.clientX, y: e.clientY };
+      this.pointerMoved = false;
+    }, true);
+    window.addEventListener("pointermove", (e) => {
+      if (this.pressAt && !this.pointerMoved && Math.hypot(e.clientX - this.pressAt.x, e.clientY - this.pressAt.y) > 6) this.pointerMoved = true;
+    }, true);
+  }
 
   get count() {
     return this.transforms.length;
@@ -136,6 +147,7 @@ export class SceneTools {
     ts.addFieldCallback(this.cbKey, "touchTime", () => {
       if (!this.enabled) return;
       if (this.gizmoActive > 0 || performance.now() - this.lastGizmoRelease < 150) return;
+      if (this.pointerMoved) return; // an orbit/pan drag that ended over the object is not a click
       // innermost sensor fires; select the first entry for this node (document order)
       const idx = this.transforms.findIndex((e) => same(e.node, t));
       if (idx >= 0) this.select(idx);
