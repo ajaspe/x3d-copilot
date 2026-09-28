@@ -13,7 +13,8 @@ model is working are time-lapsed 4× with a badge).
 | 5 | Copilot repairs the broken scene (tool chips, validation, screenshot). | 0:30 + lapse |
 | 6 | Selection: earth selected → gizmo + inspector; scrub; source updates. | 0:35 |
 | 7 | Import a glTF duck → X3D; Export menu. | 0:20 |
-| 8 | Closing card. | 0:40 |
+| 8 | A scene from one sentence: the copilot generates a small scene (tool chips, validation, screenshot). | 0:25 + lapse |
+| 9 | Closing card. | 0:40 |
 
 ## Narration
 
@@ -31,4 +32,6 @@ model is working are time-lapsed 4× with a badge).
 
 **S7.** Common formats import as editable X3D: glTF, OBJ, STL, PLY, VRML, all converted through X_ITE's own loaders and normalised to X3D 4.0. Export as X3D XML, Classic VRML, or JSON.
 
-**S8.** X3D Copilot is open source under the MIT license, with fifty-three automated tests covering the schema validator, every linter rule and every example scene, and continuous integration on GitHub. It is live today at albertojaspe.net slash x3d-copilot. We believe it deserves consideration as Tool of the Year because it is a complete, usable X3D authoring environment with zero installation, and as Innovation of the Year because it is the first X3D tool where an AI is grounded in the ISO object model and closed-loop validated by schema, linter, runtime and its own eyes. Thank you.
+**S8.** And the copilot creates as well as repairs. One sentence, a wooden table with a bowl of fruit, becomes a complete scene: the model looks up the nodes it needs, writes the file, validates it, and checks the render before answering.
+
+**S9.** X3D Copilot is open source under the MIT license, with fifty-four automated tests covering the schema validator, every linter rule and every example scene, and continuous integration on GitHub. It is live today at albertojaspe.net slash x3d-copilot. We believe it deserves consideration as Tool of the Year because it is a complete, usable X3D authoring environment with zero installation, and as Innovation of the Year because it is the first X3D tool where an AI is grounded in the ISO object model and closed-loop validated by schema, linter, runtime and its own eyes. Thank you.

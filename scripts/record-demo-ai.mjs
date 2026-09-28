@@ -88,6 +88,11 @@ async function clickCanvasCenter(dx = 0, dy = 0) {
   const box = await page.locator("#canvas").boundingBox();
   await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy);
 }
+async function bindOrViewAll(def) {
+  await page.evaluate((d) => {
+    try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode(d).set_bind = true; } catch { window.__x3dcopilot.viewer.viewAll(); }
+  }, def);
+}
 
 await page.goto(URL);
 await page.waitForFunction(() => window.__x3dcopilot && window.__x3dcopilot.viewer.browser.currentScene.rootNodes.length > 0, null, { timeout: 60000 });
@@ -99,40 +104,53 @@ await segment(1, async () => {
   await orbit(120, 30, 50);
 });
 
+// S2: simple scene from an empty file
 await segment(2, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Full" version="4.0">\n  <head>\n    <meta name="title" content="lobby.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="playground.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Build an art-deco hotel lobby: a 16 by 16 metre chequered marble floor made of alternating PhysicalMaterial tiles (use DEF/USE for the two materials), six fluted columns (Cylinders) around the room, a dark ceiling, a low reception desk, warm PointLights near the columns and one bright light in the centre, a subtle Background, and a Viewpoint that slowly tours the room in a loop using a PositionInterpolator and OrientationInterpolator. Keep it under 150 lines and make sure it renders well.");
-  await sleep(1500);
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await orbit(140, 40, 60);
+  await ask("Create a simple scene: a red sphere of radius 1 (DEF it 'Ball', centred at the origin, sitting on the floor) on a blue tiled floor 12 by 12 metres, one SpotLight from above-left, a light sky-blue Background, and a Viewpoint DEF='Main' that frames the sphere from the front, slightly above. Keep it compact.");
+  await sleep(1000);
+  await bindOrViewAll("Main");
+  await orbit(90, 20, 50);
   await sleep(1500);
 });
 
+// S3: build on it
 await segment(3, async () => {
-  await ask("Add a chrome sphere of radius 1.2 floating in the centre of the lobby at height 2, slowly spinning, whose surface reflects the whole room using a GeneratedCubeMapTexture with update ALWAYS as the environment/reflection texture of a fully metallic PhysicalMaterial with roughness 0.05. Look up the node definitions first. Also add a Viewpoint DEF='MirrorView' about 4 metres in front of the sphere at its height, looking straight at it, and place it as the FIRST Viewpoint in the Scene so it is the initial view. Then take a screenshot and make sure the reflection is visible.");
+  await ask("Now add three small cubes (side 0.4) orbiting the sphere at radius 2.2 and height 1, each with a different PhysicalMaterial (gold metallic, matte green, glossy white), all driven by one TimeSensor and OrientationInterpolators with ROUTEs. Do not change the existing nodes.");
+  await sleep(1000);
+  await bindOrViewAll("Main");
+  await orbit(-100, 20, 50);
   await sleep(1500);
-  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("MirrorView").set_bind = true; } catch (e) { window.__x3dcopilot.viewer.viewAll(); } });
-  await sleep(2000);
-  await orbit(-120, 20, 60);
+});
+
+// S4: recursive texture (render-to-texture reflection)
+await segment(4, async () => {
+  await ask("Make the sphere 'Ball' a chrome mirror: replace its material with a fully metallic PhysicalMaterial with roughness 0.05 whose reflection comes from a GeneratedCubeMapTexture with update='ALWAYS', so it reflects the floor and the orbiting cubes. Look up the node definitions first, then take a screenshot to confirm the reflection is visible.");
+  await sleep(1000);
+  await bindOrViewAll("Main");
+  await orbit(70, 10, 40);
   await sleep(2500);
 });
 
-await segment(4, async () => {
-  await loadExample("click-to-animate.x3d");
-  await sleep(2000);
-  await ask("When the cone is clicked, in addition to the bounce, make it also spin one full turn around Y during the same 1.2 seconds, and change the sign text to 'Click me!'.");
+// S5: events - click behaviour on the AI-built sphere, then real clicks
+await segment(5, async () => {
+  await ask("Add interaction: when the sphere 'Ball' is clicked, it should jump up 1.5 metres and come back within 1 second, and flash its emissive colour to yellow and back. Use a TouchSensor, a TimeSensor started by touchTime, and interpolators with ROUTEs.");
   await sleep(1000);
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await sleep(800);
-  await clickCanvasCenter(0, 20);
-  await sleep(2600);
-  await clickCanvasCenter(0, 20);
-  await sleep(2600);
+  await bindOrViewAll("Main");
+  await sleep(1500);
+  for (let i = 0; i < 3; i++) {
+    await clickCanvasCenter(0, 30);
+    await sleep(3200);
+  }
+  await orbit(60, 10, 30);
+  await sleep(1000);
+  await clickCanvasCenter(0, 30);
+  await sleep(3000);
 });
 
-await segment(5, async () => {
+await segment(6, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(3000);
   await ask("Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.");
@@ -141,7 +159,7 @@ await segment(5, async () => {
   await sleep(2000);
 });
 
-await segment(6, async () => {
+await segment(7, async () => {
   await loadExample("solar-system.x3d");
   await sleep(2000);
   await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
@@ -150,11 +168,11 @@ await segment(6, async () => {
   await sleep(2500);
 });
 
-await segment(7, async () => {
+await segment(8, async () => {
   await sleep(1000);
 }, { card: "arch" });
 
-await segment(8, async () => {
+await segment(9, async () => {
   await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
