@@ -107,45 +107,55 @@ await segment(1, async () => {
   await orbit(120, 30, 50);
 });
 
-// S2: tennis racket + bouncing ball from an empty file
+// S2: Little Prince asteroid from an empty file
 await segment(2, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="tennis.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="asteroid-b612.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Create a tennis racket standing upright on a tennis court, with a tennis ball bouncing next to it. Racket: DEF='Racket' Transform at the origin, oval head made with an Extrusion (circular cross-section swept along an elliptical spine), a throat and a handle from Cylinders, and a few crossed strings as thin Cylinders or an IndexedLineSet. Ball: DEF='Ball' Transform, Sphere radius 0.033 (real size ~6.7 cm; the racket is ~0.69 m long), bouncing continuously between the ground and 0.6 m with a TimeSensor (cycleInterval 1.2, loop) and a PositionInterpolator with an ease-in/out key set, DEF the interpolator 'Bounce'. A green court floor (Box 6 x 0.02 x 6) with white lines, a Viewpoint DEF='Main' framing racket and ball from the front at eye level. Keep it under 120 lines.");
+  await ask("Create a scene inspired by The Little Prince: a tiny planet (Sphere radius 3, DEF='Planet', warm ochre colour) floating in a black sky full of stars (a PointSet of ~400 random white points on a large sphere, plus a Background with a very dark sky). On top of the planet stands a small house (DEF='House'): a Box body, a Cone roof, a small chimney, and a door made as a separate Transform DEF='Door' hinged at its left edge (put the Box door inside a Transform whose center/translation lets it rotate about the hinge), the door facing +Z. Next to the house a small boy (DEF='Boy') built from primitives: a Sphere head with golden Cone hair, a Cylinder body in green, small legs, and a long scarf (thin Box) fluttering with a slow rotation animation. Two Viewpoints: DEF='Main' framing the whole planet from the front, and DEF='DoorView' close up, exactly centred on the door, looking straight at it from +Z. Keep it under 150 lines.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(90, 20, 50);
   await sleep(1500);
 });
 
-// S3: realism
+// S3: Billboard sign
 await segment(3, async () => {
-  await ask("Make it look realistic: switch all materials to PhysicalMaterial (graphite black frame with metallic 0.6 roughness 0.35; off-white nylon strings; yellow-green felt ball with roughness 0.95; the court a slightly rough acrylic green), add a DirectionalLight as the sun (direction from upper left) with shadows='true' and shadowIntensity 0.7 so the racket and the ball cast shadows on the court, enable castShadow on the shapes, and add a bright daytime sky Background with a soft gradient. Do not change the animation.");
+  await ask("Add a sign above the house that always faces the camera: a Billboard with axisOfRotation 0 0 0 containing a Text node reading 'Asteroid B-612' with a SANS bold FontStyle, cream colour, size about 0.6, floating 1.5 m above the roof. Do not change anything else.");
   await sleep(1000);
   await bindOrViewAll("Main");
-  await orbit(-110, 20, 50);
+  await orbit(-140, 10, 60);
+  await sleep(600);
+  await orbit(140, -10, 60);
+  await sleep(1200);
+});
+
+// S4: cartoon look
+await segment(4, async () => {
+  await ask("Give the scene a cartoon look: flat, vivid cel-shaded colours and dark outlines. Preferred approach: for the planet, house and boy, use UnlitMaterial or a two-tone look, and add outlines by wrapping each main shape with a slightly larger copy (scale about 1.04) rendered with a black UnlitMaterial and inverted faces (ccw='false' where the geometry supports it, or solid='true' with negative scale), so silhouettes get a dark edge. Keep the stars, the sign, the door hinge structure and all DEF names unchanged. Validate and take a screenshot.");
+  await sleep(1000);
+  await bindOrViewAll("Main");
+  await orbit(70, 10, 40);
   await sleep(2000);
 });
 
-// S4: events - click the racket, the ball jumps much higher
-await segment(4, async () => {
-  await ask("Add interaction: when the racket 'Racket' is clicked, the ball should immediately do one big jump three times higher (to about 1.8 m) over 1.6 seconds and then continue its normal bouncing. Use a TouchSensor inside the racket Transform, a one-shot TimeSensor started by touchTime, a second PositionInterpolator DEF='BigJump', and ROUTEs. Make sure the normal bounce does not fight the big jump (for example, route the big jump to a parent Transform DEF='BallLift' that carries the bouncing ball).");
+// S5: click the door to open it (toggle)
+await segment(5, async () => {
+  await ask("Add interaction: clicking the door 'Door' swings it open by 100 degrees around its hinge over 1 second, and clicking it again closes it. Use a TouchSensor in the door Transform, a BooleanToggle (or an IntegerSequencer) plus a TimeSensor and an OrientationInterpolator with ROUTEs. Keep DoorView exactly centred on the door.");
   await sleep(1000);
+  await bindOrViewAll("DoorView");
+  await sleep(2500);
+  for (let i = 0; i < 4; i++) {
+    await clickCanvasCenter(0, 0);
+    await sleep(3200);
+  }
   await bindOrViewAll("Main");
   await sleep(1500);
-  // the racket stands at the origin; click its head, a little above the centre of the view
-  for (let i = 0; i < 3; i++) {
-    await clickCanvasCenter(0, -40);
-    await sleep(3600);
-  }
   await orbit(60, 10, 30);
-  await sleep(800);
-  await clickCanvasCenter(0, -40);
-  await sleep(3200);
+  await sleep(1500);
 });
 
-await segment(5, async () => {
+await segment(6, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(3000);
   await ask("Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.");
@@ -154,7 +164,7 @@ await segment(5, async () => {
   await sleep(2000);
 });
 
-await segment(6, async () => {
+await segment(7, async () => {
   await loadExample("solar-system.x3d");
   await sleep(2000);
   await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
@@ -163,11 +173,11 @@ await segment(6, async () => {
   await sleep(2500);
 });
 
-await segment(7, async () => {
+await segment(8, async () => {
   await sleep(1000);
 }, { card: "arch" });
 
-await segment(8, async () => {
+await segment(9, async () => {
   await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
