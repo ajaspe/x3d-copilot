@@ -43,6 +43,7 @@ export interface SceneToolsEvents {
 const USER_KEY = "x3d-copilot";
 const VISIT_KEY = "x3d-copilot-visit";
 const GIZMO_SCREEN_SIZE = 0.16; // fraction of the view distance
+const POINTING_SENSORS = new Set(["TouchSensor", "PlaneSensor", "CylinderSensor", "SphereSensor"]);
 
 /** SFNode wrappers may be distinct objects for the same node; compare by value. */
 function same(a: AnyNode | null | undefined, b: AnyNode | null | undefined): boolean {
@@ -124,6 +125,10 @@ export class SceneTools {
   }
 
   private injectSelector(t: AnyNode) {
+    // If the author already put a pointing-device sensor here, clicks belong to the scene's
+    // own interaction; the Transform stays selectable from the editor cursor.
+    const kids = Array.from((t.children ?? []) as Iterable<AnyNode>);
+    if (kids.some((k) => k && POINTING_SENSORS.has(k.getNodeTypeName()))) return;
     const ts = this.scene!.createNode("TouchSensor") as AnyNode;
     ts.setNodeUserData(USER_KEY, "selector");
     ts.description = "Click to select this Transform";

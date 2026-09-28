@@ -65,6 +65,13 @@ describe("source map of Transform elements", () => {
   });
 });
 
+describe("selection rules", () => {
+  it("Transforms with an authored pointing sensor are still listed in the source map (selectable from the editor)", () => {
+    const s = state(`<X3D profile="Immersive" version="4.0"><Scene><Transform DEF="B"><Shape><Cone/></Shape><TouchSensor DEF="T"/></Transform></Scene></X3D>`);
+    expect(listTransforms(s).map(describeEntry)).toEqual(['Transform DEF="B"']);
+  });
+});
+
 describe("rotation math", () => {
   it("round-trips Euler degrees through axis-angle", () => {
     for (const e of [[0, 0, 0], [90, 0, 0], [10, 20, 30], [-45, 60, 120]] as [number, number, number][]) {

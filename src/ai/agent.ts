@@ -19,7 +19,7 @@ export type AgentEvent =
   | { type: "error"; message: string }
   | { type: "stopped"; reason: string };
 
-const MAX_TOOL_ROUNDS = 16;
+const MAX_TOOL_ROUNDS = 24;
 const MAX_TOKENS = 32000;
 
 export class Copilot {

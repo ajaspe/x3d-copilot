@@ -111,10 +111,11 @@ await segment(2, async () => {
 });
 
 await segment(3, async () => {
-  await ask("Add a chrome sphere of radius 1.2 floating in the centre of the lobby at height 2, slowly spinning, whose surface reflects the whole room using a GeneratedCubeMapTexture with update ALWAYS as the environment/reflection texture of a fully metallic PhysicalMaterial with roughness 0.05. Look up the node definitions first. Then take a screenshot and make sure the reflection is visible.");
+  await ask("Add a chrome sphere of radius 1.2 floating in the centre of the lobby at height 2, slowly spinning, whose surface reflects the whole room using a GeneratedCubeMapTexture with update ALWAYS as the environment/reflection texture of a fully metallic PhysicalMaterial with roughness 0.05. Look up the node definitions first. Also add a Viewpoint DEF='MirrorView' about 4 metres in front of the sphere at its height, looking straight at it, and place it as the FIRST Viewpoint in the Scene so it is the initial view. Then take a screenshot and make sure the reflection is visible.");
   await sleep(1500);
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await orbit(-160, 30, 60);
+  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("MirrorView").set_bind = true; } catch (e) { window.__x3dcopilot.viewer.viewAll(); } });
+  await sleep(2000);
+  await orbit(-120, 20, 60);
   await sleep(2500);
 });
 
