@@ -45,8 +45,9 @@ segs.forEach((s, i) => {
   const next = i + 1 < segs.length ? segs[i + 1].start : endSrc;
   newStart[s.id] = cursor;
   const len = next - s.start;
-  const keep = s.card ? len : Math.min(len, secs(s.id) + 1.5);
+  const keep = Math.min(len, secs(s.id) + 1.5);
   push(s.start, s.start + keep, 1);
+  if (s.card) return; // static card: cut (not lapse) whatever the recorder idled beyond the narration
   // time-lapse only while the model was working (busyUntil, stamped by the recorder); the result plays at 1x
   const lapseEnd = s.busyUntil !== undefined ? Math.min(next, Math.max(s.start + keep, s.busyUntil)) : next;
   if (lapseEnd - (s.start + keep) > 0.3) push(s.start + keep, lapseEnd, K);
