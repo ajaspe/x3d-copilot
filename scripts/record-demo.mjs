@@ -54,7 +54,7 @@ async function card(name, title, subtitle, lines = []) {
   await p.close();
 }
 await card("title", "X3D Copilot", "A spec-grounded, AI-assisted X3D 4.0 editor that runs entirely in the browser", ["Web3D 2026 · Web3D/Metaverse Tools Competition", "Alberto Jaspe-Villanueva · KAUST"]);
-await card("end", "X3D Copilot", "Open source · MIT · 53 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
+await card("end", "X3D Copilot", "Open source · MIT · 54 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
 
 // ---- helpers -----------------------------------------------------------------------
 async function segment(id, fn) {
@@ -198,9 +198,23 @@ await segment(7, async () => {
 });
 
 await segment(8, async () => {
-  await loadExample("pbr-materials.x3d");
-  await sleep(1000);
-  await orbit(120, 30, 40);
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="fruit-bowl.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
+  await sleep(1200);
+  await page.click("#chat-input");
+  await page.type("#chat-input", "Create a small scene: a wooden table with a bowl holding three fruits (an apple, an orange and a banana), warm lighting, a soft Background and a Viewpoint that frames the bowl. Keep it compact and validate it.", { delay: 18 });
+  await sleep(400);
+  await page.click("#btn-send");
+  await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
+  await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 }).catch(() => {});
+  await sleep(1200);
+  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
+  await orbit(120, 30, 50);
+  await sleep(2000);
+});
+
+await segment(9, async () => {
+  await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
 
