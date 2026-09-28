@@ -124,6 +124,19 @@ await segment(2, async () => {
 });
 
 await segment(3, async () => {
+  await loadExample("click-to-animate.x3d");
+  await sleep(2500);
+  const box = await page.locator("#canvas").boundingBox();
+  for (let i = 0; i < 2; i++) {
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 + 20);
+    await sleep(2600);
+  }
+  await orbit(90, 20, 40);
+  await page.mouse.click(box.x + box.width / 2 + 40, box.y + box.height / 2 + 20);
+  await sleep(2000);
+});
+
+await segment(4, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(2500);
   const items = page.locator("#issue-list li.error");
@@ -136,7 +149,7 @@ await segment(3, async () => {
   }
 });
 
-await segment(4, async () => {
+await segment(5, async () => {
   await page.click("#chat-input");
   await page.type("#chat-input", "Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.", { delay: 22 });
   await sleep(600);
@@ -152,7 +165,7 @@ await segment(4, async () => {
   await sleep(2500);
 });
 
-await segment(5, async () => {
+await segment(6, async () => {
   await loadExample("solar-system.x3d");
   await sleep(1200);
   await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
@@ -170,7 +183,7 @@ await segment(5, async () => {
   await page.keyboard.press("Escape");
 });
 
-await segment(6, async () => {
+await segment(7, async () => {
   await page.setInputFiles("#file-input", join(vdir, "assets", "Duck.glb"));
   await page.waitForFunction(() => document.querySelector("#editor .cm-content").textContent.includes("Duck") || document.querySelector("#editor .cm-content").textContent.includes("IndexedTriangleSet") || document.querySelector("#editor .cm-content").textContent.includes("ImageTexture"), null, { timeout: 60000 }).catch(() => {});
   await sleep(1500);
@@ -184,7 +197,7 @@ await segment(6, async () => {
   await page.mouse.click(10, 500);
 });
 
-await segment(7, async () => {
+await segment(8, async () => {
   await loadExample("pbr-materials.x3d");
   await sleep(1000);
   await orbit(120, 30, 40);

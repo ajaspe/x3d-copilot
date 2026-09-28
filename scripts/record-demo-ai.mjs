@@ -77,12 +77,16 @@ async function orbit(dx, dy, steps = 40) {
 }
 async function ask(text) {
   await page.click("#chat-input");
-  await page.type("#chat-input", text, { delay: 18 });
+  await page.type("#chat-input", text, { delay: 16 });
   await sleep(500);
   await page.click("#btn-send");
   await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
-  await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 360000 }).catch(() => {});
+  await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 420000 }).catch(() => {});
   await page.evaluate(() => { const l = document.querySelector("#chat-log"); l.scrollTop = l.scrollHeight; });
+}
+async function clickCanvasCenter(dx = 0, dy = 0) {
+  const box = await page.locator("#canvas").boundingBox();
+  await page.mouse.click(box.x + box.width / 2 + dx, box.y + box.height / 2 + dy);
 }
 
 await page.goto(URL);
@@ -96,26 +100,47 @@ await segment(1, async () => {
 });
 
 await segment(2, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="new-scene.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Full" version="4.0">\n  <head>\n    <meta name="title" content="lobby.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Create a small solar system: an emissive sun as the only light, an earth orbiting it and a moon orbiting the earth with nested Transforms and independent TimeSensors, warm lighting, a dark starry Background and a Viewpoint above the ecliptic.");
+  await ask("Build an art-deco hotel lobby: a 16 by 16 metre chequered marble floor made of alternating PhysicalMaterial tiles (use DEF/USE for the two materials), six fluted columns (Cylinders) around the room, a dark ceiling, a low reception desk, warm PointLights near the columns and one bright light in the centre, a subtle Background, and a Viewpoint that slowly tours the room in a loop using a PositionInterpolator and OrientationInterpolator. Keep it under 150 lines and make sure it renders well.");
   await sleep(1500);
   await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await orbit(160, 60, 60);
+  await orbit(140, 40, 60);
   await sleep(1500);
 });
 
 await segment(3, async () => {
+  await ask("Add a chrome sphere of radius 1.2 floating in the centre of the lobby at height 2, slowly spinning, whose surface reflects the whole room using a GeneratedCubeMapTexture with update ALWAYS as the environment/reflection texture of a fully metallic PhysicalMaterial with roughness 0.05. Look up the node definitions first. Then take a screenshot and make sure the reflection is visible.");
+  await sleep(1500);
+  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
+  await orbit(-160, 30, 60);
+  await sleep(2500);
+});
+
+await segment(4, async () => {
+  await loadExample("click-to-animate.x3d");
+  await sleep(2000);
+  await ask("When the cone is clicked, in addition to the bounce, make it also spin one full turn around Y during the same 1.2 seconds, and change the sign text to 'Click me!'.");
+  await sleep(1000);
+  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
+  await sleep(800);
+  await clickCanvasCenter(0, 20);
+  await sleep(2600);
+  await clickCanvasCenter(0, 20);
+  await sleep(2600);
+});
+
+await segment(5, async () => {
   await loadExample("broken-scene.x3d");
-  await sleep(3500);
+  await sleep(3000);
   await ask("Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.");
   await sleep(1500);
   await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
   await sleep(2000);
 });
 
-await segment(4, async () => {
+await segment(6, async () => {
   await loadExample("solar-system.x3d");
   await sleep(2000);
   await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
@@ -124,11 +149,11 @@ await segment(4, async () => {
   await sleep(2500);
 });
 
-await segment(5, async () => {
+await segment(7, async () => {
   await sleep(1000);
 }, { card: "arch" });
 
-await segment(6, async () => {
+await segment(8, async () => {
   await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
