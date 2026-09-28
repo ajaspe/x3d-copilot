@@ -3,3 +3,9 @@ dist
 .DS_Store
 *.local
 public/vendor/
+docs/submission/video/raw/
+docs/submission/video/narration/
+docs/submission/video/*.mp4
+docs/submission/tools/*.aux
+docs/submission/tools/*.log
+docs/submission/tools/*.out
