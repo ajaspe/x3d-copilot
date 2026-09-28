@@ -602,6 +602,7 @@ async function importFile(file: File) {
       addMessage("system", `Imported ${file.name} and converted it to X3D 4.0 XML (${text.split("\n").length} lines) using X_ITE's ${name.split(".").pop()?.toUpperCase()} importer.${dropped}`);
     }
     tools.select(null);
+    examplesSel.value = "";
     editor.setValue(text, { silent: true });
     await runPipeline(text);
     viewer.viewAll();
