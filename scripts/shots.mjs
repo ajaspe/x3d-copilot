@@ -29,13 +29,13 @@ const browser = await chromium.launch({
 const page = await browser.newPage({ viewport: { width: 1600, height: 1000 }, deviceScaleFactor: 1 });
 
 if (process.env.GEMINI_API_KEY) {
-  await page.addInitScript((key) => {
+  await page.addInitScript(({ key, model }) => {
     localStorage.setItem(
       "x3d-copilot.settings.v2",
-      JSON.stringify({ provider: "gemini", keys: { anthropic: "", gemini: key }, models: { anthropic: "claude-opus-5", gemini: process.env?.GEMINI_MODEL ?? "gemini-3.8-flash" }, effort: "", baseURL: { anthropic: "", gemini: "" }, autoScreenshot: true }),
+      JSON.stringify({ provider: "gemini", keys: { anthropic: "", gemini: key }, models: { anthropic: "claude-opus-5", gemini: model }, effort: "", baseURL: { anthropic: "", gemini: "" }, autoScreenshot: true }),
     );
     localStorage.removeItem("x3d-copilot.scene.v1");
-  }, process.env.GEMINI_API_KEY);
+  }, { key: process.env.GEMINI_API_KEY, model: process.env.GEMINI_MODEL ?? "gemini-3.8-flash" });
 }
 
 page.on("console", (m) => { if (m.type() === "error") console.log("[page]", m.text().slice(0, 200)); });
