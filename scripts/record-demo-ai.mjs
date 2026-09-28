@@ -154,7 +154,7 @@ await segment(5, async () => {
     await clickCanvasCenter(dx, dy);
     await sleep(1500);
     const after = await doorAngle();
-    console.log(door click at (${dx},${dy}): angle ${before} -> ${after});
+    console.log("door click at (" + dx + "," + dy + "): angle " + before + " -> " + after);
     if (before !== null && after !== null && Math.abs(after - before) > 0.05) { hit = [dx, dy]; break; }
     await sleep(1800);
   }
