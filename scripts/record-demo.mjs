@@ -203,7 +203,7 @@ await segment(8, async () => {
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1200);
   await page.click("#chat-input");
-  await page.type("#chat-input", "Create a small scene: a wooden table with a bowl holding three fruits (an apple, an orange and a banana), warm lighting, a soft Background and a Viewpoint that frames the bowl. Keep it compact and validate it.", { delay: 18 });
+  await page.type("#chat-input", "Create a realistic studio still life: on a round marble pedestal (Cylinder, PhysicalMaterial off-white with roughness 0.3), a tall glossy ceramic vase built with an Extrusion (circular cross-section, varying scale along a vertical spine; deep blue PhysicalMaterial roughness 0.15), a bronze sphere (metallic 1, roughness 0.3) and a small frosted glass cube (transparency 0.5, roughness 0.1). Studio lighting: a key DirectionalLight with shadows='true' and shadowIntensity 0.6, a soft fill PointLight, a neutral grey gradient Background, and a Viewpoint DEF='Main' framing the pedestal at a slight three-quarter angle. Enable castShadow on the shapes. Keep it under 110 lines.", { delay: 18 });
   await sleep(400);
   await page.click("#btn-send");
   await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});

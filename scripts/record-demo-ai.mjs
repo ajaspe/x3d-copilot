@@ -105,53 +105,45 @@ await segment(1, async () => {
   await orbit(120, 30, 50);
 });
 
-// S2: simple scene from an empty file
+// S2: tennis racket + bouncing ball from an empty file
 await segment(2, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="playground.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="tennis.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Create a simple scene: a red sphere of radius 1 (DEF it 'Ball', centred at the origin, sitting on the floor) on a blue tiled floor 12 by 12 metres, one SpotLight from above-left, a light sky-blue Background, and a Viewpoint DEF='Main' that frames the sphere from the front, slightly above. Keep it compact.");
+  await ask("Create a tennis racket standing upright on a tennis court, with a tennis ball bouncing next to it. Racket: DEF='Racket' Transform at the origin, oval head made with an Extrusion (circular cross-section swept along an elliptical spine), a throat and a handle from Cylinders, and a few crossed strings as thin Cylinders or an IndexedLineSet. Ball: DEF='Ball' Transform, Sphere radius 0.033 (real size ~6.7 cm; the racket is ~0.69 m long), bouncing continuously between the ground and 0.6 m with a TimeSensor (cycleInterval 1.2, loop) and a PositionInterpolator with an ease-in/out key set, DEF the interpolator 'Bounce'. A green court floor (Box 6 x 0.02 x 6) with white lines, a Viewpoint DEF='Main' framing racket and ball from the front at eye level. Keep it under 120 lines.");
   await sleep(1000);
   await bindOrViewAll("Main");
   await orbit(90, 20, 50);
   await sleep(1500);
 });
 
-// S3: build on it
+// S3: realism
 await segment(3, async () => {
-  await ask("Now add three small cubes (side 0.4) orbiting the sphere at radius 2.2 and height 1, each with a different PhysicalMaterial (gold metallic, matte green, glossy white), all driven by one TimeSensor and OrientationInterpolators with ROUTEs. Do not change the existing nodes.");
+  await ask("Make it look realistic: switch all materials to PhysicalMaterial (graphite black frame with metallic 0.6 roughness 0.35; off-white nylon strings; yellow-green felt ball with roughness 0.95; the court a slightly rough acrylic green), add a DirectionalLight as the sun (direction from upper left) with shadows='true' and shadowIntensity 0.7 so the racket and the ball cast shadows on the court, enable castShadow on the shapes, and add a bright daytime sky Background with a soft gradient. Do not change the animation.");
   await sleep(1000);
   await bindOrViewAll("Main");
-  await orbit(-100, 20, 50);
-  await sleep(1500);
+  await orbit(-110, 20, 50);
+  await sleep(2000);
 });
 
-// S4: recursive texture (render-to-texture reflection)
+// S4: events - click the racket, the ball jumps much higher
 await segment(4, async () => {
-  await ask("Make the sphere 'Ball' a chrome mirror: replace its material with a fully metallic PhysicalMaterial with roughness 0.05 whose reflection comes from a GeneratedCubeMapTexture with update='ALWAYS', so it reflects the floor and the orbiting cubes. Look up the node definitions first, then take a screenshot to confirm the reflection is visible.");
-  await sleep(1000);
-  await bindOrViewAll("Main");
-  await orbit(70, 10, 40);
-  await sleep(2500);
-});
-
-// S5: events - click behaviour on the AI-built sphere, then real clicks
-await segment(5, async () => {
-  await ask("Add interaction: when the sphere 'Ball' is clicked, it should jump up 1.5 metres and come back within 1 second, and flash its emissive colour to yellow and back. Use a TouchSensor, a TimeSensor started by touchTime, and interpolators with ROUTEs.");
+  await ask("Add interaction: when the racket 'Racket' is clicked, the ball should immediately do one big jump three times higher (to about 1.8 m) over 1.6 seconds and then continue its normal bouncing. Use a TouchSensor inside the racket Transform, a one-shot TimeSensor started by touchTime, a second PositionInterpolator DEF='BigJump', and ROUTEs. Make sure the normal bounce does not fight the big jump (for example, route the big jump to a parent Transform DEF='BallLift' that carries the bouncing ball).");
   await sleep(1000);
   await bindOrViewAll("Main");
   await sleep(1500);
+  // the racket stands at the origin; click its head, a little above the centre of the view
   for (let i = 0; i < 3; i++) {
-    await clickCanvasCenter(0, 30);
-    await sleep(3200);
+    await clickCanvasCenter(0, -40);
+    await sleep(3600);
   }
   await orbit(60, 10, 30);
-  await sleep(1000);
-  await clickCanvasCenter(0, 30);
-  await sleep(3000);
+  await sleep(800);
+  await clickCanvasCenter(0, -40);
+  await sleep(3200);
 });
 
-await segment(6, async () => {
+await segment(5, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(3000);
   await ask("Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.");
@@ -160,7 +152,7 @@ await segment(6, async () => {
   await sleep(2000);
 });
 
-await segment(7, async () => {
+await segment(6, async () => {
   await loadExample("solar-system.x3d");
   await sleep(2000);
   await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
@@ -169,11 +161,11 @@ await segment(7, async () => {
   await sleep(2500);
 });
 
-await segment(8, async () => {
+await segment(7, async () => {
   await sleep(1000);
 }, { card: "arch" });
 
-await segment(9, async () => {
+await segment(8, async () => {
   await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
