@@ -29,10 +29,12 @@ Alberto Jaspe-Villanueva, King Abdullah University of Science and Technology (KA
 \href{mailto:alberto.jaspe@kaust.edu.sa}{alberto.jaspe@kaust.edu.sa}\\[3pt]
 \small Prototype: \url{https://albertojaspe.net/x3d-copilot/} \qquad Source (MIT): \url{https://github.com/ajaspe/x3d-copilot}\\
 \small\textit{Web3D 2026, AI \& Web3D Innovation Competition. Category: AI-Driven Content Generation.}\\[8pt]
+\fcolorbox{teal!60!black}{teal!6}{\parbox{0.82\textwidth}{\centering\normalsize\textbf{Demonstration video (4 min):} \href{https://youtu.be/ll1CE0XaRjo}{\texttt{https://youtu.be/ll1CE0XaRjo}}}}\\[8pt]
 \small\textbf{Trying it:} the AI features need the user's own Gemini or Claude API key, entered once in \textsf{Settings} (a free Gemini key from aistudio.google.com/apikey is enough). The key stays in the browser and is sent only to the model provider. Everything else, editing, validation, direct manipulation, import and export, works without a key.
 \end{center}
 
 \vspace{6pt}
+\section{Abstract}
 X3D Copilot is a web application for creating and editing 3D scenes in X3D, the ISO-standard open format for 3D on the web, in its latest version, X3D~4.0. It combines a conventional editor (live rendering, source view, direct manipulation of objects, import and export of common 3D formats) with an AI co-author to which the user can describe a scene, or a change to a scene, in plain language. The novelty is in how the AI is connected to the editor. Language models produce X3D quickly, but on their own they invent field names, place nodes in the wrong parents, wire events incorrectly and never see the result. In X3D Copilot the model reads node definitions from the official X3D specification data, can change the scene only through edits that are immediately checked by three independent validators (the official X3D schema, a semantic linter derived from the specification, and the X\_ITE runtime), receives those reports back until the scene is valid, and finally looks at a screenshot of the rendered result. Scenes produced this way conform to the standard by construction. The tool runs entirely in the browser as an open-source static site; the only network traffic is the call to the model, made with the user's own key.
 
 \section{What the tool does}
