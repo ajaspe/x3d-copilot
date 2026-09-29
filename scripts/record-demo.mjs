@@ -63,13 +63,13 @@ async function segment(id, fn) {
   timeline.push({ id, start });
   console.log(`S${id} at ${start.toFixed(1)}s`);
   await fn();
-  const rest = secs(id) + 1.0 - (now() - start);
+  const rest = secs(id) + 2.0 - (now() - start); // ~1.7 s of silence between narrations
   if (rest > 0) await sleep(rest * 1000);
 }
 async function loadExample(file) {
   await page.selectOption("#examples", file);
   await page.waitForFunction(() => /nodes|failed/.test(document.querySelector("#view-status").textContent), null, { timeout: 30000 });
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
+  // authored viewpoints are honoured; no view-all here (it would persist as a zoom-out in X_ITE)
 }
 async function orbit(dx, dy, steps = 40) {
   const box = await page.locator("#canvas").boundingBox();
