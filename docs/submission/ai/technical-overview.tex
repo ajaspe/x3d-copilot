@@ -1,5 +1,5 @@
 \documentclass[10pt,a4paper]{article}
-\usepackage[margin=15mm,top=12mm,bottom=12mm]{geometry}
+\usepackage[margin=15mm,top=12mm,bottom=13mm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
@@ -16,56 +16,65 @@
 \titlespacing*{\section}{0pt}{7pt}{2pt}
 \titleformat{\section}{\normalfont\large\bfseries\color{teal!60!black}}{}{0pt}{}
 \pagestyle{empty}
+\newcommand{\crit}[1]{\textcolor{teal!60!black}{\textbf{[#1]}}}
 
 \begin{document}
 \begin{center}
-{\LARGE\bfseries X3D Copilot}\\[2pt]
-{\large Technical overview -- spec-grounded, self-verifying AI authoring of X3D 4.0 scenes}\\[4pt]
-Alberto Jaspe-Villanueva, KAUST \quad \href{mailto:alberto.jaspe@kaust.edu.sa}{alberto.jaspe@kaust.edu.sa}\\[2pt]
+{\LARGE\bfseries Closing the Loop: Spec-Grounded, Self-Verifying}\\[1pt]
+{\LARGE\bfseries AI Authoring of X3D 4.0 Scenes in the Browser}\\[4pt]
+{\large Technical overview of the \emph{X3D Copilot} prototype}\\[4pt]
+Alberto Jaspe-Villanueva, King Abdullah University of Science and Technology (KAUST) \quad \href{mailto:alberto.jaspe@kaust.edu.sa}{alberto.jaspe@kaust.edu.sa}\\[3pt]
 \small Prototype: \url{https://albertojaspe.net/x3d-copilot/} \quad Source (MIT): \url{https://github.com/ajaspe/x3d-copilot}\\
-\small\textbf{To try the AI live:} open \textsf{Settings} in the prototype and paste your own Gemini (free tier at aistudio.google.com/apikey) or Claude API key; the key stays in your browser and is sent only to the provider. Everything else works without a key.\\
-\small\textit{Web3D 2026 -- AI \& Web3D Innovation Competition -- category: AI-Driven Content Generation}
+\small\textit{Web3D 2026 -- AI \& Web3D Innovation Competition -- category: AI-Driven Content Generation (also relevant: Open Innovation)}\\[2pt]
+\small\textbf{To try the AI live:} open \textsf{Settings} in the prototype and paste your own Gemini (free tier at aistudio.google.com/apikey) or Claude API key; the key stays in your browser and is sent only to the provider. Editing, validation, the gizmo and import/export work without a key.
 \end{center}
 
-\section{Overview}
-X3D Copilot is a browser-only application in which a large language model authors and edits X3D~4.0 scenes under continuous verification. The model never writes to the scene directly: it calls tools that patch or replace the source, and each call returns a validation report produced by the official X3D~4.0 XML Schema, a semantic linter derived from the X3D Unified Object Model, and the X\_ITE runtime. A screenshot tool lets the model inspect its own render. Users work alongside the model in a three-pane interface (chat, live X\_ITE view, source editor) and can select objects with an X3D-native gizmo; the selection is passed to the model as context.
+\section{Summary}
+Large language models can draft X3D quickly, but on their own their output is unreliable: invented field names, misplaced nodes, broken ROUTEs, mixed-up versions, and no way to see what they produced. This prototype takes a different route from ``a bigger model or a longer prompt'': it \textbf{grounds the model in the standard itself} (the ISO/IEC 19775-1 X3D Unified Object Model, compiled into a queryable database) and \textbf{closes the loop with verification the model cannot bypass} (the official X3D~4.0 XML Schema, a semantic linter derived from the object model, the X\_ITE runtime, and a screenshot the model inspects). The result is AI-generated 3D content that is \emph{standards-conformant by construction}, produced inside a complete browser-based X3D editor with live rendering, direct manipulation and multi-format import. Everything runs client-side as a static site; the only network traffic is the model call, made with the user's own key.
 
 \begin{figure}[h]
 \centering
-\includegraphics[width=0.98\textwidth]{architecture.png}
-\caption{Architecture. Everything runs client-side; the only network traffic is the model API call made with the user's own key.}
+\includegraphics[width=0.98\textwidth]{fig-ui.png}
+\caption{The interface, with the copilot-authored ``snowman'' example loaded and its hat selected. \textbf{(1)~AI co-author}: the conversation with the model; every tool call is shown as a step (read scene, look up a node in the spec, apply edits, validate, screenshot) that the user can expand to read the exact validation report the model received. \textbf{(2)~Live X3D view}: X\_ITE~16 renders the scene as the source changes; clicking geometry selects its \texttt{Transform}, and the gizmo (arrows, rings, cube) is itself built from X3D \texttt{PlaneSensor}/\texttt{CylinderSensor} nodes injected at runtime. \textbf{(3)~Scene source}: a CodeMirror editor with autocompletion generated from the X3D object model (nodes, allowed children, fields with types and defaults) and inline diagnostics. \textbf{(4)~Validation issues}: findings from the three validators, graded and attributed (xml/lint/schema/runtime), click to jump to the line. \textbf{(5)~Selection inspector}: translation, rotation and scale of the selected node, scrubbable; edits are written back to the source as minimal attribute changes, and the selection is passed to the model as context. \textbf{(6)~Toolbar}: examples, import of glTF/OBJ/STL/PLY/VRML, export to X3D XML/Classic VRML/JSON/PNG, shading modes, model settings.}
 \end{figure}
 
-\section{AI integration}
-\textbf{Models.} Google Gemini (3.8 Flash by default; 3.1 Pro, 2.5 Pro/Flash selectable) and Anthropic Claude (Opus~5, Sonnet~5, Haiku~4.5). Both are reached through their official JavaScript SDKs directly from the browser; a provider interface (\texttt{runTurn}, \texttt{listModels}, \texttt{describeError}) isolates each SDK in an adapter of about 150 lines. Streaming text, native function calling, multimodal tool results (images returned inside function responses), thinking-level/effort control and prompt caching are used where the provider supports them.
+\section{How the AI is integrated} \crit{AI Integration 20\%}
+\textbf{Models.} Google Gemini (3.8~Flash by default; 3.1~Pro and 2.5 selectable) and Anthropic Claude (Opus~5, Sonnet~5, Haiku~4.5), through their official JavaScript SDKs, directly from the browser. A small provider interface isolates each SDK in an adapter of about 150 lines, so the architecture is model-agnostic. Streaming, native function calling, images returned inside tool results (so the model can see its render) and effort/thinking controls are used where the provider supports them.
 
-\textbf{Agent loop.} A provider-neutral loop (\texttt{src/ai/agent.ts}) sends the system prompt, tool definitions and history; executes returned tool calls locally; appends results; and repeats up to 16 rounds per user turn. Stop reasons (max tokens, refusal, safety) are surfaced to the user. History is compacted after each turn: old screenshots and whole-scene tool inputs are replaced by short placeholders, since the scene is always re-readable via \texttt{get\_scene}.
-
-\textbf{Tools} (JSON-schema definitions with local executors):
+\textbf{The loop.} The model never writes to the scene directly. A provider-neutral agent loop sends the system prompt, the tool definitions and the conversation; executes the returned tool calls locally; appends their results; and repeats (up to 24 rounds per user turn). Seven tools:
 \begin{itemize}
-\item \texttt{get\_scene}, \texttt{edit\_scene} (exact, unique text replacements or anchored insertions; rejected if ambiguous), \texttt{replace\_scene}, \texttt{validate\_scene} -- each returns the graded issue list (error/warning/hint with line numbers and sources) plus the X\_ITE render status;
-\item \texttt{lookup\_node}, \texttt{search\_nodes} -- read the ISO object model: fields with type, accessType, default, accepted node types and containerField, component and spec URL; nodes the running X\_ITE build does not implement are flagged;
-\item \texttt{screenshot} -- returns the current frame as a PNG so the model can check the result visually.
+\item \texttt{get\_scene}, \texttt{edit\_scene} (exact, unique text replacements or anchored insertions; ambiguous edits are rejected), \texttt{replace\_scene}, \texttt{validate\_scene} -- each returns the full graded issue list with line numbers plus the X\_ITE render status, so the model repairs its own mistakes before answering;
+\item \texttt{lookup\_node}, \texttt{search\_nodes} -- read the ISO object model: every field with type, accessType, default, accepted node types and containerField, the component and the specification URL; nodes the running X\_ITE build does not implement are flagged;
+\item \texttt{screenshot} -- returns the current frame as an image so the model can check framing, lighting and visibility.
 \end{itemize}
-\textbf{Prompting.} The system prompt fixes the workflow (read before edit, prefer patches, fix errors before answering, look up when unsure, screenshot when appearance matters) and a compact X3D~4.0 authoring guide (structure, animation and interaction idioms, field syntax, X3D4 features). A per-message context note carries the user's current selection. The prompt is deliberately short; correctness comes from the tools, not from prompt text.
+The system prompt is deliberately short: it fixes the workflow (read before edit, prefer patches, fix errors before answering, look up when unsure, screenshot when appearance matters) and a compact X3D~4.0 authoring guide. Correctness comes from the tools, not from prompt text. A per-message note carries the user's current selection, so deictic requests (``make \emph{this} twice as big'') resolve to an exact node.
 
-\section{Verification stack}
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.98\textwidth]{fig-loop.png}
+\caption{The loop in action on the shipped ``broken scene'' example (eleven planted errors: misspelled profile, stale version, a \texttt{Material} outside its \texttt{Appearance}, a wrong field name, a 2-component \texttt{size}, an undefined \texttt{USE}, a capitalised boolean, mismatched interpolator keys, and three bad ROUTEs). Left: the model's steps, with the validation report it received after replacing the scene expanded, and the screenshot it took to verify the render; centre: the repaired scene; right: the corrected source, now reported as valid X3D~4.0 by all validators.}
+\end{figure}
+
+\section{Verification stack} \crit{Technical Excellence 25\%}
 \begin{enumerate}
-\item \textbf{XSD}: \texttt{x3d-4.0.xsd} with the Web3D extension schemas and the W3C XML-Signature schema are vendored and compiled once by libxml2 running in WebAssembly (libxml2-wasm); validation of a typical scene takes a few milliseconds.
-\item \textbf{Semantic linter}: $\approx$30 rules that the schema cannot express, all driven by the object-model database: duplicate DEF, undefined USE, USE of a different node type, ROUTE to unknown node/field, ROUTE from non-output or to non-input fields, ROUTE type mismatch, node in a parent field that does not accept it (e.g.\ \texttt{Material} inside \texttt{Shape}), several children in an SFNode field, attribute arity/type/range checks, zero rotation axes, interpolator key/keyValue consistency, empty groups, Shape without geometry, missing Viewpoint, unknown nodes/fields with did-you-mean suggestions, and nodes unsupported by the current X\_ITE build.
+\item \textbf{XSD}: the official \texttt{x3d-4.0.xsd} (with the Web3D extension schemas and the W3C XML-Signature schema it imports) is vendored and compiled once by libxml2 running in WebAssembly; validating a typical scene takes a few milliseconds.
+\item \textbf{Semantic linter}: about thirty rules the schema cannot express, all driven by the object-model database: duplicate DEF, undefined USE, USE of a different node type, ROUTE to an unknown node or field, ROUTE from a non-output or to a non-input field, ROUTE type mismatch, a node in a parent field that does not accept it, several children in an SFNode field, attribute arity/type/range checks, zero rotation axes, interpolator key/keyValue consistency, empty groups, Shape without geometry, missing Viewpoint, unknown nodes and fields with did-you-mean suggestions, and nodes unsupported by the running X\_ITE build.
 \item \textbf{Runtime}: X\_ITE parse errors and console warnings (missing textures, bad URLs, unsupported profiles) are captured during load and reported.
 \end{enumerate}
-Schema messages that duplicate a linter finding on the same line are demoted to hints so the model is not double-penalised; hints are hidden from the model unless it asks for a full validation.
+Schema messages that duplicate a linter finding on the same line are demoted so the model is not double-penalised. The three layers are independent modules with a shared issue format, and the spec database is regenerated from the X3DUOM by a script.
 
 \section{Web3D frameworks and standards}
-X3D~4.0 (ISO/IEC 19775-1:2023) and its XML encoding (ISO/IEC 19776-1); X3D Unified Object Model 4.0 (Web3D Consortium), compiled at build time into \texttt{src/generated/x3duom.json} (260 concrete nodes, 78 abstract types, 17 statements); X\_ITE~16.3 as the rendering and runtime engine (including its glTF/OBJ/STL/PLY/SVG loaders and XML/Classic VRML/JSON encoders); CodeMirror~6 for the editor, with completions generated from the object model.
+X3D~4.0 (ISO/IEC 19775-1:2023) and its XML encoding (ISO/IEC 19776-1); the X3D Unified Object Model 4.0 (Web3D Consortium), compiled at build time into a database of 260 concrete nodes, 78 abstract types and 17 statements; X\_ITE~16.3 as rendering and runtime engine, including its glTF/OBJ/STL/PLY/SVG loaders and its XML/Classic VRML/JSON encoders (imports are normalised to X3D~4.0); CodeMirror~6 for the editor, with completions generated from the object model. All scenes the tool produces are plain, portable \texttt{.x3d} files; the gizmo, the selection sensors and everything else the tool adds at runtime live only in the X\_ITE scene graph and never enter the user's file.
 
-\section{Direct manipulation as shared context}
-Clicking geometry selects its innermost \texttt{Transform}. The selection machinery is itself X3D: after each load, invisible \texttt{TouchSensor} nodes are injected into every Transform via the Scene Access Interface, and the gizmo (move along X/Y/Z with \texttt{PlaneSensor}, rotate with \texttt{CylinderSensor}, uniform scale) is a group of sensor nodes inserted next to the selected node in its parent's frame. A \texttt{ProximitySensor} reports the camera pose so the gizmo keeps a constant screen size and each axis handle uses the drag plane that faces the viewer. Drags are written back to the source as minimal attribute edits through the editor's syntax tree; placing the text cursor on a \texttt{Transform} selects it in the view. The current selection (DEF name, line, transform) is appended to the user's message, so deictic requests (``make this twice as big'') resolve to an exact node.
+\section{User experience} \crit{User Experience 15\%}
+Zero installation: open a URL. Natural-language authoring with visible, expandable tool steps, so the user always knows what the model read, changed and verified. Direct manipulation with an X3D-native gizmo and a numeric inspector, synchronised two-way with the source; the text cursor selects nodes in the view and vice versa. Errors are phrased as actions (``\texttt{<Material>} goes inside \texttt{<Appearance>}''), with did-you-mean suggestions and jump-to-line. Eight example scenes, including one authored entirely through the copilot in four sentences (the snowman above) and a deliberately broken one for trying the repair loop.
 
-\section{Engineering, tests, deployment}
-TypeScript, Vite; 56 vitest tests (XSD fixtures, one test per linter rule, edit-tool patching, source-map/gizmo math, and a check that every shipped example is lint-clean and schema-valid while the deliberately broken example triggers nine specific rules); CI on every push. The production build is a static site ($\approx$3~MB of application code plus the vendored X\_ITE assets), hosted on the author's website; no server component or accounts are required beyond the user's own model API key, which is stored only in the browser's \texttt{localStorage}.
+\section{Why we think it is novel} \crit{Innovation \& Originality 30\%}
+To our knowledge this is the first X3D authoring tool in which an LLM (a)~reads node and field definitions from the ISO object model through a tool instead of relying on training memory, (b)~can only act through validated edits whose reports are fed back to it, and (c)~inspects a screenshot of its own render before answering; and the first browser X3D editor whose transform gizmo is expressed in X3D sensor nodes. None of the individual ingredients is new; the contribution is the combination, and the fact that it makes AI-generated X3D conformant by construction rather than by luck. We have measured this informally rather than with a benchmark: in our recorded sessions the model repairs the eleven-error scene in one turn and builds complete animated, interactive scenes (nested orbits, sensors, PBR materials, shadows, click behaviours) from short prompts, and we ship those scenes as examples.
 
-\section{Limitations and next steps}
-Selection currently targets \texttt{Transform} nodes only; ProtoInstance internals are not selectable. The screenshot check is qualitative. Planned: HAnim-aware tools (joint lookup, motion capture import), glTF export via X\_ITE, a retrieval tool over the X3D examples archive, and applying the same architecture (spec database + validators as tools + vision check) to glTF and USD.
+\section{Impact and scalability} \crit{Impact \& Scalability 10\%}
+For the Web3D community the tool lowers the entry barrier to X3D to a sentence in a chat box while \emph{raising} conformance, which helps education, rapid prototyping and the health of the standard. The pattern (machine-readable specification + validators as tools + visual check) is not specific to X3D: the object-model database is generated by a script, and the same architecture applies to glTF, USD or CityGML with a different schema and object model. Scalability is trivial in the deployment sense, since the tool is a static site and the compute is the user's browser plus their own model account. Everything is open source under the MIT license, covered by 56 automated tests (schema fixtures, one test per linter rule, edit-tool patching, gizmo/source-map maths, and a check that every shipped example is lint-clean and schema-valid), with continuous integration on GitHub.
+
+\section{Limitations}
+Selection targets \texttt{Transform} nodes only; ProtoInstance internals are not selectable. The screenshot check is qualitative and the model's judgement of aesthetics varies between runs. Long generations depend on the provider's speed and quotas. Planned next steps: HAnim-aware tools (joint lookup, motion import), glTF export through X\_ITE, a retrieval tool over the X3D examples archive, and a quantitative evaluation of first-pass validity with and without the spec tools.
 \end{document}
