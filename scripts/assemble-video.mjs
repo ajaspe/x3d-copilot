@@ -40,7 +40,8 @@ const push = (from, to, speed) => {
   parts.push({ from, to, speed });
   cursor += (to - from) / speed;
 };
-push(0, segs[0].start, 1);
+// drop the app's boot time before the first segment: the video starts with S1 (the title card overlays it)
+// (nothing is pushed before segs[0].start)
 segs.forEach((s, i) => {
   const next = i + 1 < segs.length ? segs[i + 1].start : endSrc;
   newStart[s.id] = cursor;
@@ -97,7 +98,7 @@ f.push(`[${cur}][endc]overlay=enable='gte(t,${end.toFixed(2)})'[vout]`);
 // audio
 const amix = [];
 narration.forEach((n, i) => {
-  const delay = Math.max(0, Math.round(((newStart[n.id] ?? 0) + (n.id === 1 ? 0.5 : 0.3)) * 1000));
+  const delay = Math.max(0, Math.round(((newStart[n.id] ?? 0) + 0.3) * 1000));
   f.push(`[${3 + i}:a]adelay=${delay}|${delay}[a${i}]`);
   amix.push(`[a${i}]`);
 });
