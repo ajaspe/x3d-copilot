@@ -1,5 +1,5 @@
 \documentclass[10pt,a4paper]{article}
-\usepackage[margin=16mm,top=13mm,bottom=14mm]{geometry}
+\usepackage[margin=20mm,top=17mm,bottom=18mm]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
@@ -14,7 +14,7 @@
 \usepackage{caption}
 \captionsetup{font=small,labelfont=bf,skip=3pt}
 \setlist{nosep,leftmargin=1.3em}
-\titlespacing*{\section}{0pt}{9pt}{3pt}
+\titlespacing*{\section}{0pt}{12pt}{4pt}
 \titlespacing*{\subsection}{0pt}{6pt}{1pt}
 \titleformat{\section}{\normalfont\large\bfseries\color{teal!60!black}}{}{0pt}{}
 \titleformat{\subsection}{\normalfont\normalsize\bfseries}{}{0pt}{}
@@ -28,11 +28,11 @@
 Alberto Jaspe-Villanueva, King Abdullah University of Science and Technology (KAUST)\\
 \href{mailto:alberto.jaspe@kaust.edu.sa}{alberto.jaspe@kaust.edu.sa}\\[3pt]
 \small Prototype: \url{https://albertojaspe.net/x3d-copilot/} \qquad Source (MIT): \url{https://github.com/ajaspe/x3d-copilot}\\
-\small\textit{Web3D 2026, AI \& Web3D Innovation Competition. Category: AI-Driven Content Generation.}\\[2pt]
+\small\textit{Web3D 2026, AI \& Web3D Innovation Competition. Category: AI-Driven Content Generation.}\\[8pt]
 \small\textbf{Trying it:} the AI features need the user's own Gemini or Claude API key, entered once in \textsf{Settings} (a free Gemini key from aistudio.google.com/apikey is enough). The key stays in the browser and is sent only to the model provider. Everything else, editing, validation, direct manipulation, import and export, works without a key.
 \end{center}
 
-\section{Abstract}
+\vspace{6pt}
 X3D Copilot is a web application for creating and editing 3D scenes in X3D, the ISO-standard open format for 3D on the web, in its latest version, X3D~4.0. It combines a conventional editor (live rendering, source view, direct manipulation of objects, import and export of common 3D formats) with an AI co-author to which the user can describe a scene, or a change to a scene, in plain language. The novelty is in how the AI is connected to the editor. Language models produce X3D quickly, but on their own they invent field names, place nodes in the wrong parents, wire events incorrectly and never see the result. In X3D Copilot the model reads node definitions from the official X3D specification data, can change the scene only through edits that are immediately checked by three independent validators (the official X3D schema, a semantic linter derived from the specification, and the X\_ITE runtime), receives those reports back until the scene is valid, and finally looks at a screenshot of the rendered result. Scenes produced this way conform to the standard by construction. The tool runs entirely in the browser as an open-source static site; the only network traffic is the call to the model, made with the user's own key.
 
 \section{What the tool does}
@@ -93,20 +93,20 @@ Google Gemini 3.8~Flash (default), Gemini 3.1~Pro and Gemini 2.5~Pro/Flash; Anth
 \item \textbf{CodeMirror~6} for the editor, with completions generated from the object model.
 \end{itemize}
 
-\section{Evaluation criteria}
-\subsection{Innovation and originality (30\%)}
+\section{How the prototype addresses the competition criteria}
+\subsection{Innovation and originality}
 To our knowledge, this is the first X3D authoring tool in which a language model reads node definitions from the specification through a tool rather than from training memory, can act only through validated edits whose reports are returned to it, and inspects a screenshot of its own render before answering; and the first browser X3D editor whose transform gizmo is built from X3D sensor nodes. The individual techniques are known; the contribution is their combination into a closed loop that makes AI-generated X3D conform to the standard by construction.
 
-\subsection{Technical excellence (25\%)}
+\subsection{Technical excellence}
 Three independent validators sharing one issue format; a specification database regenerated from the official X3DUOM; provider-neutral agent loop with typed adapters; direct manipulation implemented with standard X3D nodes and synchronised with the source through the editor's syntax tree; 56 automated tests and continuous integration; a static build with no server-side component.
 
-\subsection{AI integration (20\%)}
+\subsection{AI integration}
 The AI is not a chat window next to an editor: it is wired into the editor's own validation and rendering. Its tools give it the specification, the validators and its own eyes, and its steps are visible and inspectable to the user. Two vendors and six models are supported through the same loop, chosen by the user.
 
-\subsection{User experience (15\%)}
+\subsection{User experience}
 No installation; one URL. Plain-language authoring alongside conventional editing, with the model's work shown step by step. Direct manipulation with a gizmo and inspector; errors phrased as actions with suggestions and jump-to-line; eight example scenes including one built entirely through the copilot and one deliberately broken for trying the repair loop. Validation of a typical scene takes milliseconds; rendering is X\_ITE's; only the model calls take seconds.
 
-\subsection{Impact and scalability (10\%)}
+\subsection{Impact and scalability}
 For the Web3D community the tool lowers the entry barrier to X3D to a sentence in a chat box while raising conformance, which is relevant to teaching, rapid prototyping and the adoption of the standard. The pattern (machine-readable specification, validators as tools, visual check) transfers to glTF, USD or CityGML by exchanging the schema and object model. Deployment scales trivially because the compute is the user's browser and their own model account. The project is open source under the MIT license.
 
 \section{Innovation statement}

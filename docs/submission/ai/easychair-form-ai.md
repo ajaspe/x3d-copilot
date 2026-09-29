@@ -27,9 +27,9 @@ Scene graph editing
 
 **Source code:** https://github.com/ajaspe/x3d-copilot (public, MIT)
 
-**Documentation:** attached `ai-documentation.pdf` (4 pages: abstract, feature overview with annotated UI, technical overview, architecture, AI models used, Web3D frameworks employed, evaluation criteria, innovation statement); README in the repository.
+**Documentation:** attached `x3d-copilot-ai-documentation.pdf` (4 pages: abstract, feature overview with annotated UI, technical overview, architecture, AI models used, Web3D frameworks employed, how the prototype addresses the criteria, innovation statement); README in the repository.
 
-**Demo video (3–5 min):** <YouTube link — docs/submission/video/x3d-copilot-ai-demo.mp4>
+**Demo video (3–5 min):** https://youtu.be/ll1CE0XaRjo
 
 **Innovation statement (≤500 words):** paste `innovation-statement.md`.
 
