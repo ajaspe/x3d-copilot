@@ -54,7 +54,7 @@ async function card(name, title, subtitle, lines = []) {
   await p.close();
 }
 await card("title", "X3D Copilot", "A spec-grounded, AI-assisted X3D 4.0 editor that runs entirely in the browser", ["Web3D 2026 · Web3D/Metaverse Tools Competition", "Alberto Jaspe-Villanueva · KAUST"]);
-await card("end", "X3D Copilot", "Open source · MIT · 54 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
+await card("end", "X3D Copilot", "Open source · MIT · 56 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
 
 // ---- helpers -----------------------------------------------------------------------
 async function segment(id, fn) {
@@ -125,18 +125,22 @@ await segment(2, async () => {
 });
 
 await segment(3, async () => {
-  await loadExample("click-to-animate.x3d");
-  await sleep(2500);
+  await loadExample("snowman.x3d");
+  await sleep(1500);
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(false));
+  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("CloseUp").set_bind = true; } catch { window.__x3dcopilot.viewer.viewAll(); } });
+  await sleep(2000);
   const box = await page.locator("#canvas").boundingBox();
-  for (let i = 0; i < 2; i++) {
-    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2 + 20);
+  for (let i = 0; i < 3; i++) {
+    await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await sleep(2600);
   }
-  await orbit(90, 20, 40);
-  await page.mouse.click(box.x + box.width / 2 + 40, box.y + box.height / 2 + 20);
-  await sleep(2000);
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(true));
+  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("Main").set_bind = true; } catch {} });
+  await sleep(1200);
+  await orbit(80, 20, 40);
+  await sleep(800);
 });
-
 await segment(4, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(2500);
