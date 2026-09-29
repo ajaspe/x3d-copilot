@@ -8,8 +8,8 @@ assembled by `scripts/assemble-video.mjs --variant ai --timelapse 8` (only the s
 | 1 | Title card, then the app. | 0:18 |
 | 2 | From an empty file: a snowman on snowy ground at night under stars. Tool chips. | 0:35 + lapse |
 | 3 | Details: nose, eyes, buttons, arms, scarf, top hat. | 0:20 + lapse |
-| 4 | "Give it a cartoon look" (cel shading through X3D shaders or flat colours with outlines). | 0:25 + lapse |
-| 5 | Events: clicking the snowman makes him tip his hat; several clicks with time to see it. | 0:35 + lapse |
+| 4 | "Make the moonlight cast shadows." | 0:22 + lapse |
+| 5 | Events: clicking the snowman makes his hat jump; several clicks with time to see it. | 0:35 + lapse |
 | 6 | Broken scene repaired by the copilot. | 0:25 + lapse |
 | 7 | Selection as context: click the earth, "make this twice as big…". | 0:22 + lapse |
 | 8 | Architecture card. | 0:35 |
@@ -23,9 +23,9 @@ assembled by `scripts/assemble-video.mjs --variant ai --timelapse 8` (only the s
 
 **S3.** Now we build on it: a carrot nose, coal eyes and buttons, stick arms, a scarf and a top hat. The model reads the current scene and adds only what is needed, with exact patches, each validated again.
 
-**S4.** Let's change the style: a cartoon look. The model reaches for flat, vivid materials with dark outlines, and the result is still standard X3D 4.0 that the validators accept.
+**S4.** Now some atmosphere: we ask for the moonlight to cast shadows. The model turns the moon's DirectionalLight into a shadow caster and marks the snowman and the trees to cast shadows on the snow, all with standard X3D 4.0 lighting fields that the validators accept.
 
-**S5.** Interaction comes last. We ask that clicking the snowman makes him tip his hat. The model adds a TouchSensor, a TimeSensor and interpolators on the hat, and the linter checks every ROUTE, so a mis-wired event never ships silently. And now we click him: the hat lifts, tilts and comes back, exactly as any X3D browser would run it.
+**S5.** Interaction comes last. We ask that clicking the snowman makes his hat do a small jump. The model adds a TouchSensor, a TimeSensor and a PositionInterpolator on the hat, and the linter checks every ROUTE, so a mis-wired event never ships silently. And now we click him: the hat hops and lands back, exactly as any X3D browser would run it.
 **S6.** Repair is the same loop in reverse. This scene has eleven planted errors: a misspelled profile, a misplaced Material, a wrong field name, a bad ROUTE, mismatched interpolator keys, an undefined USE. The model patches them, every patch returns the validation report, eleven errors become zero, and it verifies the render.
 
 **S7.** The model also shares the user's spatial context. Clicking geometry selects its Transform with an X3D-native gizmo, built from PlaneSensors and CylinderSensors injected at runtime. The selection travels with the next message, so "make this twice as big and give it a physically based material" resolves to exactly that node.
