@@ -157,7 +157,7 @@ await segment(2, async () => {
   await sleep(1800);
   await page.keyboard.press("Escape");
   // restore the untouched example (undo would also revert the example load itself)
-  await page.evaluate((src) => window.__x3dcopilot.editor.setValue(src, { silent: true }), original);
+  await page.evaluate((src) => { window.__x3dcopilot.editor.setValue(src, { silent: true }); return window.__x3dcopilot.runPipeline(src); }, original);
   await sleep(800);
 });
 
