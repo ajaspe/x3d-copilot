@@ -136,9 +136,9 @@ await segment(3, async () => {
   await sleep(600);
 });
 
-// S4: cartoon look
+// S4: moon shadows
 await segment(4, async () => {
-  await ask("Give it a cartoon look: flat vivid colours with dark outlines.");
+  await ask("Make the moonlight cast shadows: the snowman and the trees should cast soft shadows on the snow.");
   await sleep(800);
   await bindOrViewAll("Main");
   await orbit(70, 10, 35);
@@ -147,7 +147,7 @@ await segment(4, async () => {
 
 // S5: click the snowman -> he tips his hat
 await segment(5, async () => {
-  await ask("When I click the snowman, he should tip his hat: the hat lifts, tilts a little and comes back down over about one second. Also add a viewpoint DEF='CloseUp' in front of him so the snowman fills the view.");
+  await ask("When I click the snowman, his hat should do a small jump and land back. Also add a viewpoint DEF='CloseUp' in front of him so the snowman fills the view.");
   await sleep(800);
   // selection off for this segment: clicks must only reach the scene's own sensors
   await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(false));
