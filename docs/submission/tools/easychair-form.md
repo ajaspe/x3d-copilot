@@ -19,6 +19,8 @@ X3D Copilot is a zero-install, browser-based X3D 4.0 editor in which every chang
 **What problem does this tool solve?**
 Hand-written X3D fails silently (bad ROUTEs, misplaced nodes, wrong field names) and LLM-generated X3D invents fields and never sees its output. X3D Copilot gives authors — students, researchers, content creators — an editor where the standard itself (XSD + X3DUOM) plus the runtime check every edit, and where an AI assistant is forced through the same checks, turning natural-language requests into valid, rendered X3D 4.0.
 
+**Note for the judges:** the live demo needs your own Gemini or Claude API key (⚙ Settings; a free Gemini key from aistudio.google.com/apikey is enough). The key stays in the browser. Editing, validation, gizmo and import/export work without a key.
+
 **Is it open-source?**
 Yes — MIT license. https://github.com/ajaspe/x3d-copilot (live: https://albertojaspe.net/x3d-copilot/)
 
