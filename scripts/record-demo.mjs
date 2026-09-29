@@ -140,12 +140,12 @@ await segment(2, async () => {
   const pos = await page.evaluate(() => { const v = window.__x3dcopilot.editor.view; const s = v.state.doc.toString(); return s.indexOf("</Scene>"); });
   await page.evaluate((i) => { const v = window.__x3dcopilot.editor.view; v.dispatch({ selection: { anchor: i }, scrollIntoView: true }); v.focus(); }, pos);
   await sleep(400);
+  const original = await page.evaluate(() => window.__x3dcopilot.editor.getValue());
   await page.keyboard.type("    <Poi", { delay: 140 });
   await sleep(2600);
   await page.keyboard.press("Escape");
-  await page.keyboard.press("Control+Z");
-  await sleep(300);
-  await page.keyboard.press("Control+Z");
+  // restore the untouched example (undo would also revert the example load itself)
+  await page.evaluate((src) => window.__x3dcopilot.editor.setValue(src, { silent: true }), original);
   await sleep(800);
 });
 
