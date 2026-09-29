@@ -142,7 +142,19 @@ await segment(2, async () => {
   await sleep(400);
   const original = await page.evaluate(() => window.__x3dcopilot.editor.getValue());
   await page.keyboard.type("    <Poi", { delay: 140 });
-  await sleep(2600);
+  const popup = async () => {
+    const ok = await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 1500 }).then(() => true).catch(() => false);
+    if (!ok) await page.keyboard.press("Control+Space");
+    await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 1500 }).catch(() => {});
+    console.log("autocomplete popup:", await page.locator(".cm-tooltip-autocomplete").count());
+  };
+  await popup(); // element names: PointLight, PointSet, ...
+  await sleep(1800);
+  await page.keyboard.press("Enter"); // accept PointLight
+  await sleep(500);
+  await page.keyboard.type(" loc", { delay: 140 });
+  await popup(); // attribute names with types and defaults: location ...
+  await sleep(1800);
   await page.keyboard.press("Escape");
   // restore the untouched example (undo would also revert the example load itself)
   await page.evaluate((src) => window.__x3dcopilot.editor.setValue(src, { silent: true }), original);
