@@ -4,6 +4,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{graphicx}
+\usepackage{float}
 \usepackage{booktabs}
 \usepackage{enumitem}
 \usepackage{xcolor}
@@ -47,7 +48,7 @@ The interface (Figure~\ref{fig:ui}) has three main panes and works like a normal
 \item \textbf{Nothing to install, nothing sent to a server.} A static site; the model provider is the only external service, and the user chooses it (Google Gemini or Anthropic Claude) and pays for it with their own key.
 \end{itemize}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.84\textwidth]{fig-ui.png}
 \caption{The interface, with the copilot-authored snowman example loaded and its hat selected. (1)~AI co-author: the conversation with the model; each tool call appears as a step that can be expanded to show the validation report the model received. (2)~Live 3D view: X\_ITE renders the scene as the source changes; clicking geometry selects it. (3)~X3D source: a code editor with specification-driven autocompletion and inline diagnostics. (4)~Validation: findings of the three validators, with jump-to-line. (5)~Inspector: translation, rotation and scale of the selected object, editable, synchronised with the source and passed to the model as context. (6)~Toolbar: examples, import, export, shading, view control and model settings.}
@@ -74,7 +75,7 @@ After each load, invisible \texttt{TouchSensor} nodes are injected into every \t
 TypeScript and Vite; 56 automated tests (schema fixtures, one test per linter rule, edit patching, gizmo mathematics, and a check that every shipped example is lint-clean and schema-valid); continuous integration on GitHub; production build of about 3~MB of application code plus the vendored X\_ITE assets, hosted as static files.
 
 \section{Architecture}
-\begin{figure}[h]
+\begin{figure}[H]
 \centering
 \includegraphics[width=0.8\textwidth]{architecture.png}
 \caption{Everything runs in the browser. The agent loop reaches the scene only through tools; the specification database answers lookups; the validators and the X\_ITE runtime grade every change; screenshots return the render to the model. Provider adapters keep the loop independent of the model vendor.}
