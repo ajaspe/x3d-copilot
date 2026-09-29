@@ -50,22 +50,22 @@ await page.evaluate(() => {
 await page.evaluate(() => {
   const marks = [
     ["#chat-pane", "1", "AI co-author"],
-    ["#view-pane", "2", "Live X3D view (X_ITE)"],
-    ["#editor", "3", "Scene source (X3D XML)"],
-    ["#issues-pane", "4", "Validation issues"],
-    ["#inspector", "5", "Selection inspector"],
-    [".toolbar", "6", "Examples · import · export · shading"],
+    ["#view-pane", "2", "Live 3D view"],
+    ["#editor", "3", "X3D source"],
+    ["#issues-pane", "4", "Validation"],
+    ["#inspector", "5", "Inspector"],
+    [".toolbar", "6", "Toolbar"],
   ];
   for (const [sel, n, label] of marks) {
     const el = document.querySelector(sel); if (!el) continue;
     const r = el.getBoundingClientRect();
     const box = document.createElement("div"); box.className = "annot";
-    box.style.cssText = `position:fixed;left:${r.left + 3}px;top:${r.top + 3}px;width:${r.width - 6}px;height:${r.height - 6}px;border:3px solid #f59e0b;border-radius:8px;pointer-events:none;z-index:9999;box-sizing:border-box`;
+    box.style.cssText = `position:fixed;left:${r.left + 3}px;top:${r.top + 3}px;width:${r.width - 6}px;height:${r.height - 6}px;border:4px solid #f59e0b;border-radius:8px;pointer-events:none;z-index:9999;box-sizing:border-box`;
     const tag = document.createElement("div");
     tag.textContent = `${n}  ${label}`;
-    tag.style.cssText = `position:absolute;left:8px;bottom:8px;background:#f59e0b;color:#111;font:700 18px 'Segoe UI',sans-serif;padding:3px 12px;border-radius:999px;white-space:nowrap`;
-    if (sel === ".toolbar") { tag.style.left = "50%"; tag.style.transform = "translateX(-50%)"; tag.style.bottom = "-40px"; }
-    if (sel === "#inspector") { tag.style.bottom = "-40px"; tag.style.left = "8px"; }
+    tag.style.cssText = `position:absolute;left:8px;bottom:8px;background:#f59e0b;color:#111;font:700 30px 'Segoe UI',sans-serif;padding:5px 18px;border-radius:999px;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.6)`;
+    if (sel === ".toolbar") { tag.style.left = "50%"; tag.style.transform = "translateX(-50%)"; tag.style.bottom = "-56px"; }
+    if (sel === "#inspector") { tag.style.bottom = "-56px"; tag.style.left = "8px"; }
     if (sel === "#chat-pane" || sel === "#view-pane") { tag.style.bottom = "auto"; tag.style.top = "8px"; }
     box.appendChild(tag); document.body.appendChild(box);
   }
