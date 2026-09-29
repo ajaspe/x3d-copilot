@@ -32,12 +32,22 @@
 {\small Live tool: \url{https://albertojaspe.net/x3d-copilot/} \qquad Source (MIT): \url{https://github.com/ajaspe/x3d-copilot}\par}
 \vspace{5pt}
 {\fcolorbox{teal!60!black}{teal!6}{\parbox{0.6\textwidth}{\centering\normalsize\textbf{Demonstration video (4:25):} \href{https://youtu.be/jLbSvOOv7Jw}{\texttt{https://youtu.be/jLbSvOOv7Jw}}}}\par}
-\vspace{6pt}
-{\small\textit{Tool name:} X3D Copilot (new). \textit{Type:} editor, validator, converter (importer/exporter). \textit{Domains:} education, content creation, research prototyping, quality assurance of X3D assets.\par}
-\vspace{2pt}
-{\small\textit{Open source:} yes, MIT. \textit{Note:} the AI co-author needs the user's own Gemini or Claude key (Settings); all other functions work without one.\par}
 \vspace{8pt}
 }]
+
+\begin{table}[H]
+\small
+\begin{tabular}{@{}p{0.27\columnwidth}p{0.69\columnwidth}@{}}
+\toprule
+\textbf{Tool name} & X3D Copilot (new tool) \\
+\textbf{Type} & Editor, validator, converter (importer and exporter) \\
+\textbf{Domains} & Education, content creation, research prototyping, quality assurance of X3D assets \\
+\textbf{Open source} & Yes, MIT license \\
+\textbf{Runs on} & Any current browser, no installation, no server \\
+\textbf{AI co-author} & Optional; needs the user's own Gemini or Claude key (Settings). All other functions work without one \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Abstract}
 X3D Copilot is a web application for creating, validating and converting X3D scenes in the current version of the standard, X3D~4.0, with no installation. It provides a live X\_ITE view, a source editor with autocompletion derived from the X3D specification, direct manipulation of objects through a gizmo that is itself built from X3D sensor nodes, import of glTF, OBJ, STL, PLY, SVG and VRML as editable X3D, and export to X3D XML, Classic VRML, JSON and PNG. Every change, whether typed, dragged or generated, is checked by three independent validators: the official X3D~4.0 XML Schema, running in the browser through libxml2 compiled to WebAssembly; a semantic linter of about thirty rules derived from the X3D Unified Object Model; and the X\_ITE runtime. An optional AI co-author works through the same validators, so scenes it writes or repairs conform to the standard. The tool is open source, covered by 56 automated tests, and deployed as a static site.
@@ -48,7 +58,7 @@ X3D authoring today means either a desktop tool or a text editor plus a separate
 \begin{figure*}[t]
 \centering
 \includegraphics[width=0.98\textwidth]{fig-ui-tools.png}
-\caption{The tool with the solar system example open and the earth selected. Two mistakes were typed into the source (a misspelled \texttt{radius}, a ROUTE from an SFRotation output to an SFVec3f input): the validators report both with line numbers and suggestions. (1)~AI co-author, optional. (2)~Live view rendered by X\_ITE, with the transform gizmo on the selected object. (3)~X3D source with specification-driven autocompletion and inline diagnostics. (4)~Validation issues from schema, linter and runtime, click to jump to the line. (5)~Inspector: translation, rotation and scale, synchronised with the source. (6)~Toolbar: examples, import, export, selection, view control, shading, validate, settings.}
+\caption{The tool with the X3D~4.0 physically based material study open and one sphere selected. Two mistakes were typed into the source (a misspelled \texttt{roughness}, a light colour with only two components): the validators report both with line numbers and suggestions. (1)~AI co-author, optional. (2)~Live view rendered by X\_ITE, with the transform gizmo on the selected object. (3)~X3D source with specification-driven autocompletion and inline diagnostics. (4)~Validation issues from schema, linter and runtime, click to jump to the line. (5)~Inspector: translation, rotation and scale, synchronised with the source. (6)~Toolbar: examples, import, export, selection, view control, shading, validate, settings.}
 \end{figure*}
 
 \section{How the tool meets the judged functionalities}

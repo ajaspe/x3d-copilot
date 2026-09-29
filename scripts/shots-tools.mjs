@@ -1,6 +1,7 @@
 /**
- * Annotated UI screenshot for the Tools-competition summary: the broken-scene example with its
- * issue list, then the solar system with the gizmo. Output: docs/submission/tools/fig-ui-tools.png
+ * Annotated UI screenshot for the Tools-competition summary: the PBR material study with one
+ * sphere selected and two deliberate mistakes typed into the source so the validators show.
+ * Output: docs/submission/tools/fig-ui-tools.png
  */
 import { chromium } from "playwright";
 import { fileURLToPath } from "node:url";
@@ -21,22 +22,30 @@ async function loadExample(file) {
   await page.waitForFunction(() => /nodes|failed/.test(document.querySelector("#view-status").textContent), null, { timeout: 30000 });
 }
 
-// Solar system with the earth selected; then type a deliberate error so the issue list is populated
-await loadExample("solar-system.x3d");
+await loadExample("pbr-materials.x3d");
 await sleep(1500);
-await page.evaluate(() => { const src = window.__x3dcopilot.editor.getValue(); const idx = [...src.matchAll(/<Transform\b[^>]*/g)].findIndex((m) => m[0].includes('DEF="EarthSpin"')); window.__x3dcopilot.tools.select(idx); });
-await page.waitForSelector("#inspector:not(.hidden)", { timeout: 5000 });
-// inject two mistakes into the source to show diagnostics: a typo in a field and a bad ROUTE target
+// inject two mistakes: a misspelled field on one sphere and a wrong colour arity on a light
 await page.evaluate(async () => {
   const e = window.__x3dcopilot.editor;
   let src = e.getValue();
-  src = src.replace('<Sphere radius="0.4"/>', '<Sphere radus="0.4"/>').replace('toNode="EarthOrbit" toField="set_rotation"', 'toNode="EarthOrbit" toField="set_translation"');
+  src = src.replace('metallic="0.5" roughness="0.65"', 'metallic="0.5" roughnes="0.65"');
+  src = src.replace('<DirectionalLight direction="0.8 0.3 -0.5" intensity="0.5" color="0.7 0.8 1"/>', '<DirectionalLight direction="0.8 0.3 -0.5" intensity="0.5" color="0.7 0.8"/>');
   e.setValue(src, { silent: true });
   await window.__x3dcopilot.runPipeline(src);
 });
 await sleep(1500);
-// scroll the editor to the earth transform
-await page.evaluate(() => { const v = window.__x3dcopilot.editor.view; const i = v.state.doc.toString().indexOf('DEF="EarthOrbit"'); v.dispatch({ selection: { anchor: i }, scrollIntoView: true }); });
+// select the gold sphere in the middle row (translation "1 0 0" of the metallic 0.5 row is the 3rd Transform in that row)
+await page.evaluate(() => {
+  const src = window.__x3dcopilot.editor.getValue();
+  const all = [...src.matchAll(/<Transform\b[^>]*/g)];
+  const idx = all.findIndex((m) => m[0].includes('translation="3 1.5 0"'));
+  window.__x3dcopilot.tools.select(idx);
+});
+await page.waitForSelector("#inspector:not(.hidden)", { timeout: 5000 });
+await sleep(800);
+// gentle orbit so the spheres read as 3D
+{ const box = await page.locator("#canvas").boundingBox(); const cx = box.x + box.width * 0.82, cy = box.y + box.height * 0.18; await page.mouse.move(cx, cy); await page.mouse.down(); for (let i = 1; i <= 30; i++) { await page.mouse.move(cx + (60 * i) / 30, cy + (40 * i) / 30); await sleep(20); } await page.mouse.up(); await sleep(800); }
+await page.evaluate(() => { const v = window.__x3dcopilot.editor.view; const i = v.state.doc.toString().indexOf("roughnes="); v.dispatch({ selection: { anchor: i }, scrollIntoView: true }); });
 await sleep(600);
 await page.evaluate(() => {
   const marks = [
