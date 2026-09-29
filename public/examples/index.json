@@ -5,5 +5,6 @@
   { "file": "click-to-animate.x3d", "title": "Click to animate", "description": "TouchSensor → TimeSensor idiom, Text with FontStyle, Billboard" },
   { "file": "extrusion-and-mesh.x3d", "title": "Extrusion & IndexedFaceSet", "description": "Procedural torus via Extrusion and a hand-built pyramid mesh" },
   { "file": "hanim-minimal.x3d", "title": "HAnim 2.0 minimal humanoid", "description": "A tiny HAnimHumanoid skeleton with animated joints" },
+  { "file": "snowman.x3d", "title": "Snowman at night (built with the copilot)", "description": "Scene authored entirely through the AI co-author: moonlight shadows, click the snowman and his hat hops" },
   { "file": "broken-scene.x3d", "title": "Broken scene (try: ask the copilot to fix it)", "description": "Deliberate mistakes: bad ROUTEs, misplaced nodes, typos, key/keyValue mismatch" }
 ]

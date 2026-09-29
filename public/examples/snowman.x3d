@@ -1,0 +1,502 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<X3D profile="Full" version="4.0" xmlns:xsd="http://www.w3.org/2001/XMLSchema-instance" xsd:noNamespaceSchemaLocation="https://www.web3d.org/specifications/x3d-4.0.xsd">
+  <head>
+    <meta name="title" content="Snowman with Shadow-Casting Moonlight"/>
+    <meta name="description" content="A cheerful snowman and snowy pine trees casting soft moonlight shadows across the snow at night."/>
+    <meta name="generator" content="X3D Copilot"/>
+  </head>
+  <Scene>
+    <!-- Viewpoints -->
+    <Viewpoint DEF="Main" description="Front View" position="0 2.2 6.2" orientation="0 1 0 0"/>
+    <Viewpoint DEF="CloseUp" description="Snowman Close-up" position="0 2.35 4.2" orientation="0 1 0 0"/>
+    <Viewpoint DEF="SideAngle" description="Moonlit Side Angle" position="4.2 2.8 5.2" orientation="-0.08 0.99 0.05 0.68"/>
+
+    <NavigationInfo headlight="false" type='"EXAMINE" "ANY"'/>
+
+    <!-- Night Sky & Horizon -->
+    <Background
+      skyColor="0.01 0.02 0.05, 0.03 0.06 0.13, 0.07 0.11 0.22"
+      skyAngle="1.3 1.57"
+      groundColor="0.04 0.06 0.12, 0.06 0.10 0.18"
+      groundAngle="1.57"/>
+
+    <!-- Moonlight (Primary Light with Shadows) -->
+    <!-- Casting moonlight from the upper-left moon across the snowman and trees onto the snow -->
+    <DirectionalLight DEF="Moonlight"
+      direction="0.68 -0.58 0.18"
+      color="0.82 0.90 1.0"
+      intensity="1.15"
+      shadows="true"
+      shadowIntensity="0.65"/>
+
+    <!-- Soft ambient cool sky fill illuminating the front so details remain clear and bright -->
+    <DirectionalLight DEF="SkyFill"
+      direction="-0.2 -0.6 -0.7"
+      color="0.45 0.58 0.82"
+      intensity="0.55"
+      shadows="false"/>
+
+    <!-- Gentle snow bounce fill upward -->
+    <DirectionalLight DEF="SnowBounce"
+      direction="0 1 0"
+      color="0.2 0.28 0.42"
+      intensity="0.35"
+      shadows="false"/>
+
+    <!-- Glowing Moon in upper-left sky (castShadow="false" so it doesn't occlude itself or rays) -->
+    <Transform translation="-7.5 10 -8">
+      <!-- Bright moon sphere -->
+      <Shape castShadow="false">
+        <Appearance>
+          <Material diffuseColor="0.96 0.98 1.0" emissiveColor="0.95 0.97 1.0"/>
+        </Appearance>
+        <Sphere radius="1.35"/>
+      </Shape>
+      <!-- Soft moonlight atmospheric halo -->
+      <Shape castShadow="false">
+        <Appearance>
+          <Material diffuseColor="0.6 0.75 1.0" emissiveColor="0.55 0.7 0.95" transparency="0.78"/>
+        </Appearance>
+        <Sphere radius="2.4"/>
+      </Shape>
+    </Transform>
+
+    <!-- Starry Sky -->
+    <Shape castShadow="false">
+      <Appearance>
+        <Material emissiveColor="0.92 0.96 1.0"/>
+        <PointProperties pointSizeScaleFactor="2.5"/>
+      </Appearance>
+      <PointSet>
+        <Coordinate point="
+          -18 16 -24, -14 20 -22, -10 18 -26, -6 22 -25, -2 19 -23, 2 24 -26, 7 21 -24, 12 17 -25, 17 22 -23, 21 16 -25,
+          -22 14 -20, -17 11 -20, -12 14 -22, -8 10 -19, -4 13 -21, 1 15 -22, 6 12 -21, 10 14 -23, 15 11 -20, 20 13 -22,
+          -19 8 -18, -15 6 -17, -11 8 -18, -7 7 -18, -3 9 -19, 3 8 -18, 8 7 -18, 13 9 -19, 18 8 -18, 22 9 -19,
+          -20 22 -20, -15 25 -21, -8 24 -22, 0 26 -23, 8 25 -22, 16 23 -21, -12 28 -24, 4 28 -25, -4 27 -23, 11 26 -22,
+          -23 18 -18, -5 17 -16, 5 18 -17, 14 19 -18, 23 17 -18, -13 22 -15, 0 21 -15, 12 22 -16, -21 12 -15, 19 12 -16,
+          -16 16 -12, -7 18 -11, 2 17 -12, 11 16 -11, 18 17 -13, -11 13 -10, 8 14 -10, -3 15 -9, 4 14 -9, 15 13 -10
+        "/>
+      </PointSet>
+    </Shape>
+
+    <!-- Snowy Ground Landscape -->
+    <Transform DEF="SnowyLandscape">
+      <!-- Ground plane sized to optimize shadow map resolution -->
+      <Transform translation="0 -0.05 -1">
+        <Shape>
+          <Appearance>
+            <Material DEF="SnowMaterial" diffuseColor="0.88 0.92 0.98" specularColor="0.32 0.38 0.52" shininess="0.22" ambientIntensity="0.28"/>
+          </Appearance>
+          <Cylinder radius="14" height="0.1"/>
+        </Shape>
+      </Transform>
+      <!-- Base mound under snowman -->
+      <Transform translation="0 0.05 0" scale="2.5 0.22 2.5">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+      <!-- Soft background snow drifts -->
+      <Transform translation="-3.2 0.06 -1.2" scale="3.2 0.28 2.8">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+      <Transform translation="3.4 0.07 -0.8" scale="3.5 0.3 3.0">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+      <Transform translation="0.6 -0.02 2.2" scale="2.6 0.18 2.2">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+      <Transform translation="-4.5 0.04 -4.0" scale="4.2 0.35 3.5">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+      <Transform translation="4.8 0.05 -3.8" scale="4.0 0.32 3.6">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowMaterial"/>
+          </Appearance>
+          <Sphere radius="1"/>
+        </Shape>
+      </Transform>
+    </Transform>
+
+    <!-- Snowy Pine Tree Prototype / Template -->
+    <Transform DEF="PineTreeGroup">
+      <!-- Tree 1: Left Foreground/Midground -->
+      <Transform translation="-3.8 0 -1.5" scale="1.15 1.15 1.15" rotation="0 1 0 0.4">
+        <!-- Tree definition -->
+        <Transform DEF="SnowyPineTree">
+          <!-- Trunk -->
+          <Transform translation="0 0.7 0">
+            <Shape>
+              <Appearance>
+                <Material DEF="BarkMaterial" diffuseColor="0.28 0.18 0.1" specularColor="0.08 0.05 0.03" shininess="0.05"/>
+              </Appearance>
+              <Cylinder radius="0.18" height="1.4"/>
+            </Shape>
+          </Transform>
+          <!-- Foliage Tier 1 (Bottom) -->
+          <Transform translation="0 1.8 0">
+            <Shape>
+              <Appearance>
+                <Material DEF="PineNeedlesMaterial" diffuseColor="0.08 0.22 0.12" specularColor="0.12 0.18 0.14" shininess="0.12"/>
+              </Appearance>
+              <Cone bottomRadius="1.35" height="1.5"/>
+            </Shape>
+          </Transform>
+          <!-- Snow Layer 1 -->
+          <Transform translation="0 2.05 0">
+            <Shape>
+              <Appearance>
+                <Material USE="SnowMaterial"/>
+              </Appearance>
+              <Cone bottomRadius="1.32" height="0.65"/>
+            </Shape>
+          </Transform>
+          <!-- Foliage Tier 2 (Middle) -->
+          <Transform translation="0 2.7 0">
+            <Shape>
+              <Appearance>
+                <Material USE="PineNeedlesMaterial"/>
+              </Appearance>
+              <Cone bottomRadius="1.1" height="1.35"/>
+            </Shape>
+          </Transform>
+          <!-- Snow Layer 2 -->
+          <Transform translation="0 2.95 0">
+            <Shape>
+              <Appearance>
+                <Material USE="SnowMaterial"/>
+              </Appearance>
+              <Cone bottomRadius="1.06" height="0.55"/>
+            </Shape>
+          </Transform>
+          <!-- Foliage Tier 3 (Top) -->
+          <Transform translation="0 3.55 0">
+            <Shape>
+              <Appearance>
+                <Material USE="PineNeedlesMaterial"/>
+              </Appearance>
+              <Cone bottomRadius="0.8" height="1.15"/>
+            </Shape>
+          </Transform>
+          <!-- Snow Cap -->
+          <Transform translation="0 3.8 0">
+            <Shape>
+              <Appearance>
+                <Material USE="SnowMaterial"/>
+              </Appearance>
+              <Cone bottomRadius="0.75" height="0.5"/>
+            </Shape>
+          </Transform>
+        </Transform>
+      </Transform>
+
+      <!-- Tree 2: Deep Left Background (Taller) -->
+      <Transform translation="-6.2 0 -4.2" scale="1.45 1.55 1.45" rotation="0 1 0 1.3">
+        <Transform USE="SnowyPineTree"/>
+      </Transform>
+
+      <!-- Tree 3: Right Midground -->
+      <Transform translation="3.8 0 -1.8" scale="1.2 1.25 1.2" rotation="0 1 0 -0.85">
+        <Transform USE="SnowyPineTree"/>
+      </Transform>
+
+      <!-- Tree 4: Deep Right Background (Tall) -->
+      <Transform translation="6.0 0 -4.5" scale="1.4 1.5 1.4" rotation="0 1 0 2.2">
+        <Transform USE="SnowyPineTree"/>
+      </Transform>
+
+      <!-- Tree 5: Distant Center-Right Gap Tree -->
+      <Transform translation="1.8 0 -5.2" scale="0.95 1.0 0.95" rotation="0 1 0 0.7">
+        <Transform USE="SnowyPineTree"/>
+      </Transform>
+
+      <!-- Tree 6: Distant Center-Left Gap Tree -->
+      <Transform translation="-1.5 0 -4.8" scale="0.85 0.9 0.85" rotation="0 1 0 -1.6">
+        <Transform USE="SnowyPineTree"/>
+      </Transform>
+    </Transform>
+
+    <!-- Snowman -->
+    <Transform DEF="Snowman">
+      <!-- Click sensor for hat jump interaction -->
+      <TouchSensor DEF="SnowmanSensor" description="Click the snowman to make his hat jump!"/>
+
+      <!-- 1. Body: Bottom Snowball -->
+      <Transform translation="0 1.05 0" scale="1.06 0.96 1.06">
+        <Shape>
+          <Appearance>
+            <Material DEF="SnowmanBodyMaterial" diffuseColor="0.93 0.96 1.0" specularColor="0.4 0.46 0.58" shininess="0.25" ambientIntensity="0.35"/>
+          </Appearance>
+          <Sphere radius="1.05"/>
+        </Shape>
+      </Transform>
+
+      <!-- 2. Body: Middle Snowball (Torso) -->
+      <Transform translation="0 2.45 0" scale="1.03 0.95 1.03">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowmanBodyMaterial"/>
+          </Appearance>
+          <Sphere radius="0.8"/>
+        </Shape>
+      </Transform>
+
+      <!-- 3. Body: Head Snowball -->
+      <Transform translation="0 3.65 0">
+        <Shape>
+          <Appearance>
+            <Material USE="SnowmanBodyMaterial"/>
+          </Appearance>
+          <Sphere radius="0.58"/>
+        </Shape>
+      </Transform>
+
+      <!-- 4. Coal Features (Eyes, Smile, Buttons) -->
+      <Transform DEF="CoalLumps">
+        <!-- Eyes -->
+        <Transform translation="-0.18 3.8 0.52" scale="0.065 0.065 0.065">
+          <Shape DEF="CoalShape">
+            <Appearance>
+              <Material DEF="CoalMaterial" diffuseColor="0.1 0.1 0.12" specularColor="0.35 0.35 0.4" shininess="0.4"/>
+            </Appearance>
+            <Sphere radius="1"/>
+          </Shape>
+        </Transform>
+        <Transform translation="0.18 3.8 0.52" scale="0.065 0.065 0.065">
+          <Shape USE="CoalShape"/>
+        </Transform>
+
+        <!-- Smile Arc -->
+        <Transform translation="-0.22 3.52 0.5" scale="0.04 0.04 0.04">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="-0.11 3.44 0.55" scale="0.042 0.042 0.042">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="0 3.42 0.56" scale="0.045 0.045 0.045">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="0.11 3.44 0.55" scale="0.042 0.042 0.042">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="0.22 3.52 0.5" scale="0.04 0.04 0.04">
+          <Shape USE="CoalShape"/>
+        </Transform>
+
+        <!-- Torso Buttons -->
+        <Transform translation="0 2.78 0.77" scale="0.07 0.07 0.07">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="0 2.45 0.81" scale="0.075 0.075 0.075">
+          <Shape USE="CoalShape"/>
+        </Transform>
+        <Transform translation="0 2.12 0.77" scale="0.07 0.07 0.07">
+          <Shape USE="CoalShape"/>
+        </Transform>
+      </Transform>
+
+      <!-- 5. Carrot Nose -->
+      <Transform translation="0 3.63 0.54" rotation="0.98 0.15 -0.1 1.68">
+        <Shape>
+          <Appearance>
+            <Material diffuseColor="0.96 0.42 0.05" specularColor="0.3 0.15 0.05" shininess="0.3"/>
+          </Appearance>
+          <Cone bottomRadius="0.085" height="0.48"/>
+        </Shape>
+      </Transform>
+
+      <!-- 6. Cozy Red Scarf -->
+      <Transform DEF="Scarf" translation="0 3.16 0">
+        <!-- Neck wrap collar -->
+        <Transform scale="1.08 0.95 1.08">
+          <Shape>
+            <Appearance>
+              <Material DEF="ScarfMaterial" diffuseColor="0.85 0.14 0.18" specularColor="0.25 0.12 0.12" shininess="0.15"/>
+            </Appearance>
+            <Cylinder radius="0.56" height="0.18" bottom="false" top="false"/>
+          </Shape>
+        </Transform>
+        <!-- Scarf knot -->
+        <Transform translation="-0.15 -0.04 0.58" rotation="0 1 0 0.3">
+          <Shape>
+            <Appearance>
+              <Material USE="ScarfMaterial"/>
+            </Appearance>
+            <Sphere radius="0.12"/>
+          </Shape>
+        </Transform>
+        <!-- Dangling scarf tail 1 -->
+        <Transform translation="-0.18 -0.36 0.62" rotation="0 0 1 0.12">
+          <Shape>
+            <Appearance>
+              <Material USE="ScarfMaterial"/>
+            </Appearance>
+            <Box size="0.18 0.52 0.05"/>
+          </Shape>
+          <!-- Fringe at end of tail 1 -->
+          <Transform translation="0 -0.28 0">
+            <Shape>
+              <Appearance>
+                <Material DEF="FringeMaterial" diffuseColor="0.96 0.86 0.22" specularColor="0.25 0.25 0.1" shininess="0.2"/>
+              </Appearance>
+              <Box size="0.18 0.07 0.052"/>
+            </Shape>
+          </Transform>
+        </Transform>
+        <!-- Dangling scarf tail 2 (shorter) -->
+        <Transform translation="-0.06 -0.26 0.65" rotation="0 0 1 -0.15">
+          <Shape>
+            <Appearance>
+              <Material USE="ScarfMaterial"/>
+            </Appearance>
+            <Box size="0.16 0.36 0.045"/>
+          </Shape>
+          <!-- Fringe at end of tail 2 -->
+          <Transform translation="0 -0.2 0">
+            <Shape>
+              <Appearance>
+                <Material USE="FringeMaterial"/>
+              </Appearance>
+              <Box size="0.16 0.06 0.048"/>
+            </Shape>
+          </Transform>
+        </Transform>
+      </Transform>
+
+      <!-- 7. Classic Top Hat (jauntily tilted with ribbon) -->
+      <Transform DEF="Hat" translation="0 4.14 0" rotation="0 0 1 -0.08">
+        <!-- Hat Brim -->
+        <Transform translation="0 0.03 0">
+          <Shape>
+            <Appearance>
+              <Material DEF="HatMaterial" diffuseColor="0.12 0.12 0.15" specularColor="0.32 0.32 0.38" shininess="0.35"/>
+            </Appearance>
+            <Cylinder radius="0.62" height="0.05"/>
+          </Shape>
+        </Transform>
+        <!-- Hat Crown -->
+        <Transform translation="0 0.35 0">
+          <Shape>
+            <Appearance>
+              <Material USE="HatMaterial"/>
+            </Appearance>
+            <Cylinder radius="0.38" height="0.6"/>
+          </Shape>
+        </Transform>
+        <!-- Ribbon Band -->
+        <Transform translation="0 0.12 0">
+          <Shape>
+            <Appearance>
+              <Material USE="ScarfMaterial"/>
+            </Appearance>
+            <Cylinder radius="0.388" height="0.12"/>
+          </Shape>
+        </Transform>
+      </Transform>
+
+      <!-- 8. Stick Arms (firmly attached to torso, reaching out cheerfully) -->
+      <!-- Left Stick Arm -->
+      <Transform DEF="LeftShoulder" translation="-0.72 2.5 0" rotation="0 0 1 0.72">
+        <Transform translation="0 0.55 0">
+          <Shape DEF="StickShape">
+            <Appearance>
+              <Material DEF="WoodMaterial" diffuseColor="0.38 0.23 0.13" specularColor="0.1 0.08 0.05" shininess="0.08"/>
+            </Appearance>
+            <Cylinder radius="0.038" height="1.1"/>
+          </Shape>
+          <!-- Twig finger 1 -->
+          <Transform translation="0 0.32 0" rotation="0 0 1 0.75">
+            <Transform translation="0 0.14 0">
+              <Shape>
+                <Appearance>
+                  <Material USE="WoodMaterial"/>
+                </Appearance>
+                <Cylinder radius="0.024" height="0.28"/>
+              </Shape>
+            </Transform>
+          </Transform>
+          <!-- Twig finger 2 -->
+          <Transform translation="0 0.18 0" rotation="0 0 1 -0.7">
+            <Transform translation="0 0.12 0">
+              <Shape>
+                <Appearance>
+                  <Material USE="WoodMaterial"/>
+                </Appearance>
+                <Cylinder radius="0.022" height="0.24"/>
+              </Shape>
+            </Transform>
+          </Transform>
+        </Transform>
+      </Transform>
+
+      <!-- Right Stick Arm (waving cheerily upwards) -->
+      <Transform DEF="RightShoulder" translation="0.72 2.5 0" rotation="0 0 1 -0.85">
+        <Transform translation="0 0.58 0">
+          <Shape USE="StickShape"/>
+          <!-- Twig finger 1 -->
+          <Transform translation="0 0.35 0" rotation="0 0 1 -0.72">
+            <Transform translation="0 0.14 0">
+              <Shape>
+                <Appearance>
+                  <Material USE="WoodMaterial"/>
+                </Appearance>
+                <Cylinder radius="0.024" height="0.28"/>
+              </Shape>
+            </Transform>
+          </Transform>
+          <!-- Twig finger 2 -->
+          <Transform translation="0 0.2 0" rotation="0 0 1 0.68">
+            <Transform translation="0 0.12 0">
+              <Shape>
+                <Appearance>
+                  <Material USE="WoodMaterial"/>
+                </Appearance>
+                <Cylinder radius="0.022" height="0.24"/>
+              </Shape>
+            </Transform>
+          </Transform>
+        </Transform>
+      </Transform>
+
+    </Transform>
+
+    <!-- Hat Jump Animation Nodes & ROUTEs -->
+    <TimeSensor DEF="HatJumpTimer" cycleInterval="0.65" loop="false"/>
+    <PositionInterpolator DEF="HatJumpPosition"
+      key="0 0.1 0.45 0.72 0.88 1.0"
+      keyValue="0 4.14 0, 0 4.12 0, 0 4.7 0, 0 4.2 0, 0 4.13 0, 0 4.14 0"/>
+    <OrientationInterpolator DEF="HatJumpRotation"
+      key="0 0.15 0.45 0.75 1.0"
+      keyValue="0 0 1 -0.08, 0 0 1 -0.18, 0 0 1 0.05, 0 0 1 -0.11, 0 0 1 -0.08"/>
+
+    <ROUTE fromNode="SnowmanSensor" fromField="touchTime" toNode="HatJumpTimer" toField="set_startTime"/>
+    <ROUTE fromNode="HatJumpTimer" fromField="fraction_changed" toNode="HatJumpPosition" toField="set_fraction"/>
+    <ROUTE fromNode="HatJumpPosition" fromField="value_changed" toNode="Hat" toField="set_translation"/>
+    <ROUTE fromNode="HatJumpTimer" fromField="fraction_changed" toNode="HatJumpRotation" toField="set_fraction"/>
+    <ROUTE fromNode="HatJumpRotation" fromField="value_changed" toNode="Hat" toField="set_rotation"/>
+  </Scene>
+</X3D>
