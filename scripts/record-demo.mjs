@@ -138,7 +138,14 @@ await segment(2, async () => {
   await sleep(1500);
   // autocompletion: type a new element inside the Scene and let the popup show
   const pos = await page.evaluate(() => { const v = window.__x3dcopilot.editor.view; const s = v.state.doc.toString(); return s.indexOf("</Scene>"); });
-  await page.evaluate((i) => { const v = window.__x3dcopilot.editor.view; v.dispatch({ selection: { anchor: i }, scrollIntoView: true }); v.focus(); }, pos);
+  await page.evaluate((i) => {
+    const v = window.__x3dcopilot.editor.view;
+    v.dispatch({ selection: { anchor: i }, scrollIntoView: true });
+    // centre the cursor line so the completion popup has room below it
+    const r = v.coordsAtPos(i); const box = v.scrollDOM.getBoundingClientRect();
+    if (r) v.scrollDOM.scrollTop += r.top - (box.top + box.height / 2);
+    v.focus();
+  }, pos);
   await sleep(400);
   const original = await page.evaluate(() => window.__x3dcopilot.editor.getValue());
   await page.keyboard.type("    <Poi", { delay: 140 });
