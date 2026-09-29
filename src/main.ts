@@ -578,7 +578,7 @@ async function loadExample(file: string) {
   tools.select(null);
   editor.setValue(text, { silent: true });
   await runPipeline(text);
-  viewer.viewAll();
+  // examples ship their own Viewpoints; honour them (view-all would override the authored framing)
 }
 examplesSel.addEventListener("change", () => {
   if (examplesSel.value) void loadExample(examplesSel.value);
