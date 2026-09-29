@@ -86,6 +86,14 @@ async function ask(text) {
   await page.evaluate(() => { const l = document.querySelector("#chat-log"); l.scrollTop = l.scrollHeight; });
   const cur = timeline[timeline.length - 1];
   if (cur) cur.busyUntil = now(); // assembler time-lapses only up to here
+  // keep the scene after each turn for post-mortems
+  try { writeFileSync(join(raw, "scene-S" + (cur ? cur.id : "x") + ".x3d"), await page.evaluate(() => window.__x3dcopilot.editor.getValue())); } catch {}
+  const apiError = await page.evaluate(() => [...document.querySelectorAll("#chat-log .msg.system")].map((m) => m.textContent).filter((t) => /API error|billing|Authentication failed|Rate limited/.test(t)).pop() ?? null);
+  if (apiError) {
+    console.error("MODEL ERROR: " + apiError.slice(0, 200));
+    process.exitCode = 2;
+    throw new Error("model API error; aborting recording");
+  }
 }
 async function clickCanvasCenter(dx = 0, dy = 0) {
   const box = await page.locator("#canvas").boundingBox();
@@ -107,54 +115,82 @@ await segment(1, async () => {
   await orbit(120, 30, 50);
 });
 
-// S2: Little Prince asteroid from an empty file
+// S2: snowman from an empty file
 await segment(2, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="asteroid-b612.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
+  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="snowman.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
   await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
   await sleep(1500);
-  await ask("Create a scene inspired by The Little Prince: a tiny planet (Sphere radius 3, DEF='Planet', warm ochre colour) floating in a black sky full of stars (a PointSet of ~400 random white points on a large sphere, plus a Background with a very dark sky). On top of the planet stands a small house (DEF='House'): a Box body, a Cone roof, a small chimney, and a door made as a separate Transform DEF='Door' hinged at its left edge (put the Box door inside a Transform whose center/translation lets it rotate about the hinge), the door facing +Z. Next to the house a small boy (DEF='Boy') built from primitives: a Sphere head with golden Cone hair, a Cylinder body in green, small legs, and a long scarf (thin Box) fluttering with a slow rotation animation. Two Viewpoints: DEF='Main' framing the whole planet from the front, and DEF='DoorView' close up, exactly centred on the door, looking straight at it from +Z. Keep it under 150 lines.");
-  await sleep(1000);
+  await ask("Make a snowman standing on snowy ground at night, with a starry sky and soft moonlight. Add a viewpoint DEF='Main' that frames him from the front.");
+  await sleep(800);
   await bindOrViewAll("Main");
-  await orbit(90, 20, 50);
-  await sleep(1500);
+  await orbit(90, 20, 45);
+  await sleep(700);
 });
 
-// S3: Billboard sign
+// S3: details
 await segment(3, async () => {
-  await ask("Add a sign above the house that always faces the camera: a Billboard with axisOfRotation 0 0 0 containing a Text node reading 'Asteroid B-612' with a SANS bold FontStyle, cream colour, size about 0.6, floating 1.5 m above the roof. Do not change anything else.");
-  await sleep(1000);
+  await ask("Give him a carrot nose, coal eyes and buttons, stick arms, a red scarf and a black top hat (make the hat its own Transform named Hat).");
+  await sleep(800);
   await bindOrViewAll("Main");
-  await orbit(-140, 10, 60);
+  await orbit(-120, 10, 50);
   await sleep(600);
-  await orbit(140, -10, 60);
-  await sleep(1200);
 });
 
 // S4: cartoon look
 await segment(4, async () => {
-  await ask("Give the scene a cartoon look: flat, vivid cel-shaded colours and dark outlines. Preferred approach: for the planet, house and boy, use UnlitMaterial or a two-tone look, and add outlines by wrapping each main shape with a slightly larger copy (scale about 1.04) rendered with a black UnlitMaterial and inverted faces (ccw='false' where the geometry supports it, or solid='true' with negative scale), so silhouettes get a dark edge. Keep the stars, the sign, the door hinge structure and all DEF names unchanged. Validate and take a screenshot.");
-  await sleep(1000);
+  await ask("Give it a cartoon look: flat vivid colours with dark outlines.");
+  await sleep(800);
   await bindOrViewAll("Main");
-  await orbit(70, 10, 40);
-  await sleep(2000);
+  await orbit(70, 10, 35);
+  await sleep(900);
 });
 
-// S5: click the door to open it (toggle)
+// S5: click the snowman -> he tips his hat
 await segment(5, async () => {
-  await ask("Add interaction: clicking the door 'Door' swings it open by 100 degrees around its hinge over 1 second, and clicking it again closes it. Use a TouchSensor in the door Transform, a BooleanToggle (or an IntegerSequencer) plus a TimeSensor and an OrientationInterpolator with ROUTEs. Keep DoorView exactly centred on the door.");
-  await sleep(1000);
-  await bindOrViewAll("DoorView");
-  await sleep(2500);
-  for (let i = 0; i < 4; i++) {
-    await clickCanvasCenter(0, 0);
-    await sleep(3200);
+  await ask("When I click the snowman, he should tip his hat: the hat lifts, tilts a little and comes back down over about one second. Also add a viewpoint DEF='CloseUp' in front of him so the snowman fills the view.");
+  await sleep(800);
+  // selection off for this segment: clicks must only reach the scene's own sensors
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(false));
+  await bindOrViewAll("CloseUp");
+  await sleep(2000);
+  // Generic hit detection: snapshot every named Transform's rotation/translation; a click "hit" if something
+  // moves after the click that was not already moving on its own.
+  const snapshot = () => page.evaluate(() => {
+    const s = window.__x3dcopilot.viewer.browser.currentScene;
+    const src = window.__x3dcopilot.editor.getValue();
+    const out = {};
+    for (const m of src.matchAll(/<Transform[^>]*DEF="([^"]+)"/g)) {
+      try { const n = s.getNamedNode(m[1]); out[m[1]] = [n.translation.x, n.translation.y, n.translation.z, n.rotation.angle].map((v) => Math.round(v * 1000) / 1000).join(","); } catch {}
+    }
+    return out;
+  });
+  const changed = (a, b) => Object.keys(b).filter((k) => a[k] !== b[k]);
+  const s0 = await snapshot(); await sleep(1400); const s1 = await snapshot();
+  const ambient = new Set(changed(s0, s1));
+  let hit = null;
+  for (const dy of [0, 80, -80, 160, -160, 240]) {
+    const before = await snapshot();
+    await clickCanvasCenter(0, dy);
+    await sleep(1400);
+    const after = await snapshot();
+    const moved = changed(before, after).filter((k) => !ambient.has(k));
+    console.log("probe dy=" + dy + ": moved " + (moved.join(",") || "nothing"));
+    if (moved.length) { hit = [0, dy]; break; }
   }
+  timeline[timeline.length - 1].hit = hit;
+  timeline[timeline.length - 1].busyUntil = now(); // probing is hidden in the time-lapse
+  await sleep(1500);
+  const [hx, hy] = hit ?? [0, 0];
+  for (let i = 0; i < 4; i++) {
+    await clickCanvasCenter(hx, hy);
+    await sleep(2600);
+  }
+  await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(true));
   await bindOrViewAll("Main");
-  await sleep(1500);
-  await orbit(60, 10, 30);
-  await sleep(1500);
+  await sleep(1000);
+  await orbit(50, 10, 25);
+  await sleep(700);
 });
-
 await segment(6, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(3000);
