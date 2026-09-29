@@ -39,7 +39,7 @@ Hand-written X3D fails silently (bad ROUTEs, misplaced nodes, wrong field names)
 Yes — MIT license. https://github.com/ajaspe/x3d-copilot (live: https://albertojaspe.net/x3d-copilot/)
 
 **Video (max 5 minutes):**
-https://youtu.be/hkA0HNPSj7Y   (placeholder until the Tools video is uploaded; the AI video is https://youtu.be/ll1CE0XaRjo)
+https://youtu.be/jLbSvOOv7Jw
 
 **Category:** submit for both — Tool of the Year and Tool/Pipeline Innovation of the Year (the video's last section explains why for each).
 
