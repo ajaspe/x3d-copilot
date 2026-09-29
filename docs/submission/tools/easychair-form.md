@@ -1,7 +1,21 @@
 # EasyChair form answers — Web3D/Metaverse Tools Competition (Web3D 2026)
 
 Submit at https://easychair.org/my/conference?conf=web3d26 → competition track. Deadline 30 Sept 2026.
-Attach `summary.pdf` (this folder) as the 1–2 page Abstract/Summary.
+Attach `x3d-copilot-tools-summary.pdf` (this folder, two columns, 2 pages) as the 1–2 page Abstract/Summary.
+
+**Title (for the submission form):** A Standards-Checked X3D 4.0 Editor for the Browser with Direct Manipulation, Format Conversion and an AI Co-Author
+
+**Keywords (one per line):**
+X3D 4.0
+Web3D
+3D authoring tool
+XML Schema validation
+Semantic linting
+X_ITE
+glTF import
+Direct manipulation
+Browser-based editor
+Open source
 
 **Name of the X3D tool (new or improved existing):**
 X3D Copilot (new tool)
@@ -14,7 +28,7 @@ Education (learning X3D), content creation, research prototyping, standards conf
 
 **Abstract/Summary (1–2 pages):** attached PDF. Short version for the text box:
 
-X3D Copilot is a zero-install, browser-based X3D 4.0 editor in which every change — typed, AI-generated or dragged with a gizmo — is validated against the official x3d-4.0.xsd (libxml2 in WebAssembly), a ~30-rule semantic linter derived from the X3D Unified Object Model, and the X_ITE runtime. An AI co-author (Gemini or Claude, called from the browser with the user's key) can act only through tools: read/patch/replace the scene, validate, look up nodes in the ISO spec database, and take screenshots — so it repairs its own errors and checks the visual result. Objects are selectable in the view with an X3D-native transform gizmo built from PlaneSensor/CylinderSensor nodes, synchronised two-way with the source. Common 3D formats import as editable X3D. Open source (MIT), 56 automated tests, CI; hosted at albertojaspe.net.
+X3D Copilot is a web application for creating, validating and converting X3D scenes in the current version of the standard, X3D 4.0, with no installation. It provides a live X_ITE view, a source editor with autocompletion derived from the X3D specification, direct manipulation of objects through a gizmo that is itself built from X3D sensor nodes, import of glTF, OBJ, STL, PLY, SVG and VRML as editable X3D, and export to X3D XML, Classic VRML, JSON and PNG. Every change, whether typed, dragged or generated, is checked by three independent validators: the official X3D 4.0 XML Schema running in the browser through libxml2 compiled to WebAssembly, a semantic linter of about thirty rules derived from the X3D Unified Object Model, and the X_ITE runtime. An optional AI co-author works through the same validators, so scenes it writes or repairs conform to the standard. The tool is open source, covered by 56 automated tests, and deployed as a static site.
 
 **What problem does this tool solve?**
 Hand-written X3D fails silently (bad ROUTEs, misplaced nodes, wrong field names) and LLM-generated X3D invents fields and never sees its output. X3D Copilot gives authors — students, researchers, content creators — an editor where the standard itself (XSD + X3DUOM) plus the runtime check every edit, and where an AI assistant is forced through the same checks, turning natural-language requests into valid, rendered X3D 4.0.
@@ -25,7 +39,7 @@ Hand-written X3D fails silently (bad ROUTEs, misplaced nodes, wrong field names)
 Yes — MIT license. https://github.com/ajaspe/x3d-copilot (live: https://albertojaspe.net/x3d-copilot/)
 
 **Video (max 5 minutes):**
-<YouTube/Vimeo link — see docs/submission/video/>
+https://youtu.be/hkA0HNPSj7Y   (placeholder until the Tools video is uploaded; the AI video is https://youtu.be/ll1CE0XaRjo)
 
 **Category:** submit for both — Tool of the Year and Tool/Pipeline Innovation of the Year (the video's last section explains why for each).
 
