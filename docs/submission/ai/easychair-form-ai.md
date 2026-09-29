@@ -4,6 +4,20 @@ Submit at https://easychair.org/my/conference?conf=web3d26 → AI & Web3D Innova
 
 **Title:** Closing the Loop: Spec-Grounded, Self-Verifying AI Authoring of X3D 4.0 Scenes in the Browser
 
+**Keywords (one per line):**
+X3D 4.0
+Web3D
+Large language models
+AI-driven content generation
+Tool use and agents
+Standards conformance
+XML Schema validation
+X_ITE
+Browser-based 3D authoring
+Scene graph editing
+
+**Abstract (short):** Large language models can draft X3D quickly, but left alone they invent fields, misplace nodes, break ROUTEs and never see what they produce. We present a browser-based prototype in which an LLM (Gemini or Claude) authors and edits X3D 4.0 scenes under continuous verification. The model is grounded in the ISO/IEC 19775-1 X3D Unified Object Model, compiled into a database it queries through a tool, and it can only change the scene through validated edits: every change is checked against the official X3D 4.0 XML Schema, a semantic linter derived from the object model, and the X_ITE runtime, and the report is fed back until the scene is valid. A screenshot tool lets the model inspect its own render. Users work alongside it with live rendering, an X3D-native transform gizmo whose selection becomes context for the model, and glTF/OBJ/STL import. The result is AI-generated 3D content that is standards-conformant by construction, delivered as an open-source static site.
+
 **Category:** AI-Driven Content Generation (primary). Also relevant: Open Innovation.
 
 **Team:** Alberto Jaspe-Villanueva (KAUST) — individual entry.
@@ -13,7 +27,7 @@ Submit at https://easychair.org/my/conference?conf=web3d26 → AI & Web3D Innova
 
 **Source code:** https://github.com/ajaspe/x3d-copilot (public, MIT)
 
-**Documentation:** attached `technical-overview.pdf` (architecture, AI models, Web3D frameworks); README in the repository.
+**Documentation:** attached `ai-overview.pdf` (two pages: annotated UI, AI integration, verification stack, Web3D frameworks, architecture); README in the repository.
 
 **Demo video (3–5 min):** <YouTube link — docs/submission/video/x3d-copilot-ai-demo.mp4>
 
