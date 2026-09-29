@@ -117,7 +117,7 @@ await page.waitForFunction(() => window.__x3dcopilot.validator.schemaReady, null
 await segment(1, async () => {
   await page.evaluate((src) => { window.__x3dcopilot.editor.setValue(src, { silent: true }); return window.__x3dcopilot.runPipeline(src); }, EMPTY("still-life.x3d"));
   await sleep(1500);
-  await ask("Create a realistic studio still life: on a round marble pedestal (Cylinder, PhysicalMaterial off-white with roughness 0.3), a tall glossy ceramic vase built with an Extrusion (circular cross-section, varying scale along a vertical spine; deep blue PhysicalMaterial roughness 0.15), a bronze sphere (metallic 1, roughness 0.3) and a small frosted glass cube (transparency 0.5, roughness 0.1). Studio lighting: a key DirectionalLight with shadows='true' and shadowIntensity 0.6, a soft fill PointLight, a neutral grey gradient Background, and a Viewpoint DEF='Main' framing the pedestal at a slight three-quarter angle. Enable castShadow on the shapes. Keep it under 110 lines.");
+  await ask("Create a realistic studio still life: on a round marble pedestal (Cylinder, PhysicalMaterial off-white with roughness 0.3), a tall glossy ceramic vase built with an Extrusion (circular cross-section, varying scale along a vertical spine; deep blue PhysicalMaterial roughness 0.15), a bronze sphere (metallic 1, roughness 0.3) and a small frosted glass cube (transparency 0.5, roughness 0.1). Studio lighting: a key DirectionalLight with shadows='true' and shadowIntensity 0.6, a soft fill PointLight, a neutral grey gradient Background, and a Viewpoint DEF='Main' framing the pedestal at a slight three-quarter angle. Enable castShadow on the shapes. Rest every object slightly above the pedestal top (no coplanar faces, so nothing flickers). Keep it under 110 lines.");
   await sleep(800);
   await bind("Main");
   await orbit(120, 30, 45);
@@ -172,7 +172,7 @@ await segment(2, async () => {
 await segment(3, async () => {
   await loadExample("solar-system.x3d");
   await sleep(1200);
-  await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
+  await page.evaluate(() => { const src = window.__x3dcopilot.editor.getValue(); const idx = [...src.matchAll(/<Transform\b[^>]*/g)].findIndex((m) => m[0].includes('DEF="EarthSpin"')); window.__x3dcopilot.tools.select(idx); }); // EarthSpin by DEF
   await sleep(1500);
   await scrub('#inspector input[data-k="ty"]', 120, 40);
   await sleep(1000);
@@ -198,6 +198,10 @@ await segment(4, async () => {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
     await sleep(2500);
   }
+  // stay close: a gentle orbit around the snowman
+  await orbit(70, 15, 60);
+  await sleep(500);
+  await orbit(-110, -10, 70);
   await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(true));
 });
 
