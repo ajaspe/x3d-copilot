@@ -2,7 +2,7 @@
 
 Submit at https://easychair.org/my/conference?conf=web3d26 → AI & Web3D Innovation track. Deadline 30 Sept 2026.
 
-**Title:** X3D Copilot: spec-grounded, self-verifying AI authoring of X3D 4.0 scenes
+**Title:** Closing the Loop: Spec-Grounded, Self-Verifying AI Authoring of X3D 4.0 Scenes in the Browser
 
 **Category:** AI-Driven Content Generation (primary). Also relevant: Open Innovation.
 
