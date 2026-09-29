@@ -40,18 +40,25 @@ const push = (from, to, speed) => {
   parts.push({ from, to, speed });
   cursor += (to - from) / speed;
 };
-push(0, segs[0].start, 1);
+// drop the app's boot time before the first segment: the video starts with S1 (the title card overlays it)
+// (nothing is pushed before segs[0].start)
 segs.forEach((s, i) => {
   const next = i + 1 < segs.length ? segs[i + 1].start : endSrc;
   newStart[s.id] = cursor;
   const len = next - s.start;
-  const keep = Math.min(len, secs(s.id) + 1.5);
+  const keep = Math.min(len, secs(s.id) + 2.2);
   push(s.start, s.start + keep, 1);
   if (s.card) return; // static card: cut (not lapse) whatever the recorder idled beyond the narration
   // time-lapse only while the model was working (busyUntil, stamped by the recorder); the result plays at 1x
   const lapseEnd = s.busyUntil !== undefined ? Math.min(next, Math.max(s.start + keep, s.busyUntil)) : next;
-  if (lapseEnd - (s.start + keep) > 0.3) push(s.start + keep, lapseEnd, K);
-  if (next - lapseEnd > 0.05) push(lapseEnd, next, 1);
+  // the narration must fit: pick a per-segment speed so the segment's output length >= narration + 1.2 s
+  const tail = Math.max(0, next - lapseEnd);
+  const lapseLen = lapseEnd - (s.start + keep);
+  let k = K;
+  const need = secs(s.id) + 2.0 - keep - tail;
+  if (lapseLen > 0.3 && need > 0) k = Math.max(1, Math.min(K, lapseLen / need));
+  if (lapseLen > 0.3) push(s.start + keep, lapseEnd, k);
+  if (tail > 0.05) push(lapseEnd, next, 1);
 });
 const TITLE_SECONDS = 6;
 const lastId = Math.max(...narration.map((n) => n.id));
@@ -73,7 +80,7 @@ const f = [];
 const labels = [];
 parts.forEach((p, i) => {
   f.push(`[0:v]trim=start=${p.from.toFixed(3)}:end=${p.to.toFixed(3)},setpts=(PTS-STARTPTS)/${p.speed}[p${i}]`);
-  if (p.speed > 1 && useBadge) {
+  if (p.speed > 1.05 && useBadge) {
     f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`);
     labels.push(`[pb${i}]`);
   } else labels.push(`[p${i}]`);
@@ -97,7 +104,7 @@ f.push(`[${cur}][endc]overlay=enable='gte(t,${end.toFixed(2)})'[vout]`);
 // audio
 const amix = [];
 narration.forEach((n, i) => {
-  const delay = Math.max(0, Math.round(((newStart[n.id] ?? 0) + (n.id === 1 ? 0.5 : 0.3)) * 1000));
+  const delay = Math.max(0, Math.round(((newStart[n.id] ?? 0) + 0.3) * 1000));
   f.push(`[${3 + i}:a]adelay=${delay}|${delay}[a${i}]`);
   amix.push(`[a${i}]`);
 });

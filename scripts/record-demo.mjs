@@ -1,10 +1,10 @@
 /**
- * Record the demo video: Playwright drives the built app in the system Edge/Chrome
+ * Record the Tools-competition demo video: Playwright drives the built app in the system Edge/Chrome
  * and records the screen. Segment timings follow docs/submission/video/narration/index.json
  * (run scripts/narrate.mjs first). Writes:
- *   docs/submission/video/raw/demo.webm   the recording
+ *   docs/submission/video/raw/demo.webm      the recording
  *   docs/submission/video/raw/timeline.json  segment start offsets (seconds)
- *   docs/submission/video/raw/card-*.png  title cards to overlay
+ *   docs/submission/video/raw/card-*.png     title cards to overlay
  *
  *   GEMINI_API_KEY=... node scripts/record-demo.mjs
  */
@@ -22,7 +22,8 @@ const W = 1600, H = 900;
 const narration = JSON.parse(readFileSync(join(vdir, "narration", "index.json"), "utf8"));
 const secs = (id) => narration.find((n) => n.id === id)?.seconds ?? 20;
 const KEY = process.env.GEMINI_API_KEY;
-if (!KEY) console.warn("GEMINI_API_KEY not set: the AI segment will show the 'no key' path.");
+if (!KEY) console.warn("GEMINI_API_KEY not set: the AI segments will show the 'no key' path.");
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.8-flash";
 
 const server = process.env.APP_URL ? null : await startPreview(4173);
 const URL = process.env.APP_URL ?? server.url;
@@ -35,14 +36,14 @@ const now = () => (Date.now() - t0) / 1000;
 const timeline = [];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
-await page.addInitScript((key) => {
+await page.addInitScript(({ key, model }) => {
   localStorage.removeItem("x3d-copilot.scene.v1");
   if (key) {
-    localStorage.setItem("x3d-copilot.settings.v2", JSON.stringify({ provider: "gemini", keys: { anthropic: "", gemini: key }, models: { anthropic: "claude-opus-5", gemini: "gemini-3.8-flash" }, effort: "", baseURL: { anthropic: "", gemini: "" }, autoScreenshot: true }));
+    localStorage.setItem("x3d-copilot.settings.v2", JSON.stringify({ provider: "gemini", keys: { anthropic: "", gemini: key }, models: { anthropic: "claude-opus-5", gemini: model }, effort: "", baseURL: { anthropic: "", gemini: "" }, autoScreenshot: true }));
   }
-}, KEY ?? "");
+}, { key: KEY ?? "", model: MODEL });
 
-// ---- title cards (rendered with the app's own look) --------------------------------
+// ---- title cards ------------------------------------------------------------------
 async function card(name, title, subtitle, lines = []) {
   const p = await context.newPage();
   await p.setContent(`<html><body style="margin:0;width:${W}px;height:${H}px;background:#0f1216;color:#e6edf3;font-family:'Segoe UI',system-ui,sans-serif;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center">
@@ -56,20 +57,19 @@ async function card(name, title, subtitle, lines = []) {
 await card("title", "X3D Copilot", "A spec-grounded, AI-assisted X3D 4.0 editor that runs entirely in the browser", ["Web3D 2026 · Web3D/Metaverse Tools Competition", "Alberto Jaspe-Villanueva · KAUST"]);
 await card("end", "X3D Copilot", "Open source · MIT · 56 automated tests · zero installation", ["github.com/ajaspe/x3d-copilot", "albertojaspe.net/x3d-copilot", "Tool of the Year · Tool/Pipeline Innovation of the Year"]);
 
-// ---- helpers -----------------------------------------------------------------------
+// ---- helpers ----------------------------------------------------------------------
 async function segment(id, fn) {
   const start = now();
   timeline.push({ id, start });
   console.log(`S${id} at ${start.toFixed(1)}s`);
   await fn();
-  const minLen = secs(id) + 1.0;
-  const rest = minLen - (now() - start);
+  const rest = secs(id) + 2.0 - (now() - start); // ~1.7 s of silence between narrations
   if (rest > 0) await sleep(rest * 1000);
 }
 async function loadExample(file) {
   await page.selectOption("#examples", file);
   await page.waitForFunction(() => /nodes|failed/.test(document.querySelector("#view-status").textContent), null, { timeout: 30000 });
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
+  // authored viewpoints are honoured; no view-all here (it would persist as a zoom-out in X_ITE)
 }
 async function orbit(dx, dy, steps = 40) {
   const box = await page.locator("#canvas").boundingBox();
@@ -94,133 +94,165 @@ async function scrub(selector, dx, steps = 30) {
   }
   await page.mouse.up();
 }
+async function ask(text) {
+  await page.click("#chat-input");
+  await page.type("#chat-input", text, { delay: 16 });
+  await sleep(400);
+  await page.click("#btn-send");
+  await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
+  await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 }).catch(() => {});
+  timeline[timeline.length - 1].busyUntil = now();
+}
+async function bind(def) {
+  await page.evaluate((d) => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode(d).set_bind = true; } catch { window.__x3dcopilot.viewer.viewAll(); } }, def);
+}
+const EMPTY = (title) => `<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="${title}"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n`;
 
-// ---- segments ----------------------------------------------------------------------
+// ---- boot ----------------------------------------------------------------------------
 await page.goto(URL);
 await page.waitForFunction(() => window.__x3dcopilot && window.__x3dcopilot.viewer.browser.currentScene.rootNodes.length > 0, null, { timeout: 60000 });
 await page.waitForFunction(() => window.__x3dcopilot.validator.schemaReady, null, { timeout: 60000 });
 
+// S1: hook - the copilot builds a still life from one sentence
 await segment(1, async () => {
-  await loadExample("pbr-materials.x3d");
-  await sleep(5000); // title card covers the first seconds
-  await orbit(140, 40, 60);
+  await page.evaluate((src) => { window.__x3dcopilot.editor.setValue(src, { silent: true }); return window.__x3dcopilot.runPipeline(src); }, EMPTY("still-life.x3d"));
+  await sleep(1500);
+  await ask("Create a realistic studio still life: on a round marble pedestal (Cylinder, PhysicalMaterial off-white with roughness 0.3), a tall glossy ceramic vase built with an Extrusion (circular cross-section, varying scale along a vertical spine; deep blue PhysicalMaterial roughness 0.15), a bronze sphere (metallic 1, roughness 0.3) and a small frosted glass cube (transparency 0.5, roughness 0.1). Studio lighting: a key DirectionalLight with shadows='true' and shadowIntensity 0.6, a soft fill PointLight, a neutral grey gradient Background, and a Viewpoint DEF='Main' framing the pedestal at a slight three-quarter angle. Enable castShadow on the shapes. Rest every object slightly above the pedestal top (no coplanar faces, so nothing flickers). Keep it under 110 lines.");
   await sleep(800);
-  await orbit(-140, -40, 60);
-  await sleep(600);
-  await page.click("#btn-viewall");
+  await bind("Main");
+  await orbit(120, 30, 45);
+  await sleep(1500);
 });
 
+// S2: edit & view - solar system, shading, autocompletion
 await segment(2, async () => {
   await loadExample("solar-system.x3d");
-  await sleep(1500);
-  await orbit(180, 90, 60);
-  await sleep(1000);
+  await sleep(2500);
+  await orbit(160, 80, 50);
+  await sleep(1200);
   await page.selectOption("#shading", "WIREFRAME");
   await sleep(2200);
   await page.selectOption("#shading", "PHONG");
-  await sleep(800);
+  await sleep(600);
   await page.click("#btn-viewall");
   await sleep(1500);
-  await orbit(-120, 30, 50);
+  // autocompletion: type a new element inside the Scene and let the popup show
+  const pos = await page.evaluate(() => { const v = window.__x3dcopilot.editor.view; const s = v.state.doc.toString(); return s.indexOf("</Scene>"); });
+  await page.evaluate((i) => {
+    const v = window.__x3dcopilot.editor.view;
+    v.dispatch({ selection: { anchor: i }, scrollIntoView: true });
+    // centre the cursor line so the completion popup has room below it
+    const r = v.coordsAtPos(i); const box = v.scrollDOM.getBoundingClientRect();
+    if (r) v.scrollDOM.scrollTop += r.top - (box.top + box.height / 2);
+    v.focus();
+  }, pos);
+  await sleep(400);
+  const original = await page.evaluate(() => window.__x3dcopilot.editor.getValue());
+  await page.keyboard.type("    <Poi", { delay: 140 });
+  const popup = async () => {
+    const ok = await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 1500 }).then(() => true).catch(() => false);
+    if (!ok) await page.keyboard.press("Control+Space");
+    await page.waitForSelector(".cm-tooltip-autocomplete", { timeout: 1500 }).catch(() => {});
+    console.log("autocomplete popup:", await page.locator(".cm-tooltip-autocomplete").count());
+  };
+  await popup(); // element names: PointLight, PointSet, ...
+  await sleep(1800);
+  await page.keyboard.press("Enter"); // accept PointLight
+  await sleep(500);
+  await page.keyboard.type(" loc", { delay: 140 });
+  await popup(); // attribute names with types and defaults: location ...
+  await sleep(1800);
+  await page.keyboard.press("Escape");
+  // restore the untouched example (undo would also revert the example load itself)
+  await page.evaluate((src) => { window.__x3dcopilot.editor.setValue(src, { silent: true }); return window.__x3dcopilot.runPipeline(src); }, original);
+  await sleep(800);
 });
 
+// S3: gizmo + selection context
 await segment(3, async () => {
+  await loadExample("solar-system.x3d");
+  await sleep(1200);
+  await page.evaluate(() => { const src = window.__x3dcopilot.editor.getValue(); const idx = [...src.matchAll(/<Transform\b[^>]*/g)].findIndex((m) => m[0].includes('DEF="EarthSpin"')); window.__x3dcopilot.tools.select(idx); }); // EarthSpin by DEF
+  await sleep(1500);
+  await scrub('#inspector input[data-k="ty"]', 120, 40);
+  await sleep(1000);
+  await scrub('#inspector input[data-k="rz"]', 90, 40);
+  await sleep(1000);
+  await scrub('#inspector input[data-k="sx"]', 60, 30);
+  await sleep(1200);
+  await ask("Make this twice as big and give it a physically based bluish material.");
+  await sleep(1500);
+  await page.keyboard.press("Escape");
+  await sleep(600);
+});
+
+// S4: events - the copilot-built snowman example
+await segment(4, async () => {
   await loadExample("snowman.x3d");
   await sleep(1500);
   await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(false));
-  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("CloseUp").set_bind = true; } catch { window.__x3dcopilot.viewer.viewAll(); } });
-  await sleep(2000);
+  await bind("CloseUp");
+  await sleep(1800);
   const box = await page.locator("#canvas").boundingBox();
   for (let i = 0; i < 3; i++) {
     await page.mouse.click(box.x + box.width / 2, box.y + box.height / 2);
-    await sleep(2600);
+    await sleep(2500);
   }
+  // stay close: a gentle orbit around the snowman
+  await orbit(70, 15, 60);
+  await sleep(500);
+  await orbit(-110, -10, 70);
   await page.evaluate(() => window.__x3dcopilot.tools.setEnabled(true));
-  await page.evaluate(() => { try { window.__x3dcopilot.viewer.browser.currentScene.getNamedNode("Main").set_bind = true; } catch {} });
-  await sleep(1200);
-  await orbit(80, 20, 40);
-  await sleep(800);
 });
-await segment(4, async () => {
+
+// S5: validation - linter, then repair
+await segment(5, async () => {
   await loadExample("broken-scene.x3d");
   await sleep(2500);
   const items = page.locator("#issue-list li.error");
   const n = await items.count();
   for (const i of [0, 2, Math.min(5, n - 1), Math.min(8, n - 1)]) {
     await items.nth(i).hover();
-    await sleep(700);
+    await sleep(600);
     await items.nth(i).click();
-    await sleep(1600);
+    await sleep(1400);
   }
-});
-
-await segment(5, async () => {
-  await page.click("#chat-input");
-  await page.type("#chat-input", "Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.", { delay: 22 });
-  await sleep(600);
-  await page.click("#btn-send");
-  try {
-    await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 });
-    await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 });
-    timeline[timeline.length - 1].busyUntil = now();
-  } catch {
-    /* no key or timeout: continue */
-  }
-  await sleep(1500);
+  await ask("Fix everything that is wrong with this scene, keep the author's intent, and verify the result visually.");
+  await sleep(1200);
   await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await sleep(2500);
+  await sleep(2000);
 });
 
+// S6: rendering features - PBR study
 await segment(6, async () => {
-  await loadExample("solar-system.x3d");
-  await sleep(1200);
-  await page.evaluate(() => window.__x3dcopilot.tools.select(2)); // EarthSpin
+  await loadExample("pbr-materials.x3d");
   await sleep(1500);
-  await scrub('#inspector input[data-k="ty"]', 120, 40);
-  await sleep(1200);
-  await scrub('#inspector input[data-k="rz"]', 90, 40);
-  await sleep(1200);
-  await scrub('#inspector input[data-k="sx"]', 60, 30);
-  await sleep(1500);
-  await page.keyboard.press("Escape");
+  await orbit(140, 40, 60);
   await sleep(800);
-  await page.evaluate(() => window.__x3dcopilot.tools.select(0)); // SunSpin
-  await sleep(2500);
-  await page.keyboard.press("Escape");
+  await page.selectOption("#shading", "WIREFRAME");
+  await sleep(1400);
+  await page.selectOption("#shading", "PHONG");
+  await sleep(600);
+  await orbit(-140, -40, 60);
 });
 
+// S7: import / export
 await segment(7, async () => {
   await page.setInputFiles("#file-input", join(vdir, "assets", "Duck.glb"));
-  await page.waitForFunction(() => document.querySelector("#editor .cm-content").textContent.includes("Duck") || document.querySelector("#editor .cm-content").textContent.includes("IndexedTriangleSet") || document.querySelector("#editor .cm-content").textContent.includes("ImageTexture"), null, { timeout: 60000 }).catch(() => {});
+  await page.waitForFunction(() => /Duck|IndexedTriangleSet|ImageTexture/.test(document.querySelector("#editor .cm-content").textContent), null, { timeout: 60000 }).catch(() => {});
   await sleep(1500);
   await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await sleep(1500);
+  await sleep(1000);
   await orbit(200, 40, 50);
-  await sleep(800);
+  await sleep(600);
   await page.click("#btn-export");
-  await sleep(2500);
+  await sleep(2600);
   await page.keyboard.press("Escape");
   await page.mouse.click(10, 500);
 });
 
+// S8: closing card
 await segment(8, async () => {
-  await page.evaluate(() => { window.__x3dcopilot.editor.setValue('<?xml version="1.0" encoding="UTF-8"?>\n<X3D profile="Immersive" version="4.0">\n  <head>\n    <meta name="title" content="still-life.x3d"/>\n  </head>\n  <Scene>\n  </Scene>\n</X3D>\n', { silent: true }); });
-  await page.evaluate(() => window.__x3dcopilot.runPipeline(window.__x3dcopilot.editor.getValue()));
-  await sleep(1200);
-  await page.click("#chat-input");
-  await page.type("#chat-input", "Create a realistic studio still life: on a round marble pedestal (Cylinder, PhysicalMaterial off-white with roughness 0.3), a tall glossy ceramic vase built with an Extrusion (circular cross-section, varying scale along a vertical spine; deep blue PhysicalMaterial roughness 0.15), a bronze sphere (metallic 1, roughness 0.3) and a small frosted glass cube (transparency 0.5, roughness 0.1). Studio lighting: a key DirectionalLight with shadows='true' and shadowIntensity 0.6, a soft fill PointLight, a neutral grey gradient Background, and a Viewpoint DEF='Main' framing the pedestal at a slight three-quarter angle. Enable castShadow on the shapes. Keep it under 110 lines.", { delay: 18 });
-  await sleep(400);
-  await page.click("#btn-send");
-  await page.waitForFunction(() => document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 10000 }).catch(() => {});
-  await page.waitForFunction(() => !document.querySelector("#btn-send").hasAttribute("disabled"), null, { timeout: 300000 }).catch(() => {});
-  timeline[timeline.length - 1].busyUntil = now();
-  await sleep(1200);
-  await page.evaluate(() => window.__x3dcopilot.viewer.viewAll());
-  await orbit(120, 30, 50);
-  await sleep(2000);
-});
-
-await segment(9, async () => {
   await sleep(500);
 });
 timeline.push({ id: "end", start: now() });
@@ -234,4 +266,4 @@ const target = join(raw, "demo.webm");
 if (existsSync(target)) renameSync(target, join(raw, `demo-${Date.now()}.webm`));
 renameSync(path, target);
 writeFileSync(join(raw, "timeline.json"), JSON.stringify({ width: W, height: H, timeline }, null, 2));
-console.log("recorded", target, "timeline", timeline);
+console.log("recorded", target, timeline);
