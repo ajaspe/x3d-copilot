@@ -51,8 +51,14 @@ segs.forEach((s, i) => {
   if (s.card) return; // static card: cut (not lapse) whatever the recorder idled beyond the narration
   // time-lapse only while the model was working (busyUntil, stamped by the recorder); the result plays at 1x
   const lapseEnd = s.busyUntil !== undefined ? Math.min(next, Math.max(s.start + keep, s.busyUntil)) : next;
-  if (lapseEnd - (s.start + keep) > 0.3) push(s.start + keep, lapseEnd, K);
-  if (next - lapseEnd > 0.05) push(lapseEnd, next, 1);
+  // the narration must fit: pick a per-segment speed so the segment's output length >= narration + 1.2 s
+  const tail = Math.max(0, next - lapseEnd);
+  const lapseLen = lapseEnd - (s.start + keep);
+  let k = K;
+  const need = secs(s.id) + 1.2 - keep - tail;
+  if (lapseLen > 0.3 && need > 0) k = Math.max(1, Math.min(K, lapseLen / need));
+  if (lapseLen > 0.3) push(s.start + keep, lapseEnd, k);
+  if (tail > 0.05) push(lapseEnd, next, 1);
 });
 const TITLE_SECONDS = 6;
 const lastId = Math.max(...narration.map((n) => n.id));
@@ -74,7 +80,7 @@ const f = [];
 const labels = [];
 parts.forEach((p, i) => {
   f.push(`[0:v]trim=start=${p.from.toFixed(3)}:end=${p.to.toFixed(3)},setpts=(PTS-STARTPTS)/${p.speed}[p${i}]`);
-  if (p.speed > 1 && useBadge) {
+  if (p.speed > 1.05 && useBadge) {
     f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`);
     labels.push(`[pb${i}]`);
   } else labels.push(`[p${i}]`);
