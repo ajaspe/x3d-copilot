@@ -1,88 +1,103 @@
 /**
- * One-slide fast-forward presentation (16:9) with the embedded highlight clip.
- * Run from the scratchpad where pptxgenjs is installed:
- *   node <repo>/scripts/fastforward-slide.cjs <repo>/docs/submission/fastforward
+ * One-slide fast-forward presentation (16:9) for the AI & Web3D Innovation Competition final.
+ * Produces the slide content with pptxgenjs; scripts/fastforward-transplant.py then moves the
+ * slide into the official Web3D 2026 template so it inherits the conference master.
+ *
+ *   NODE_PATH=<dir with pptxgenjs> node scripts/fastforward-slide.cjs docs/submission/fastforward <out.pptx>
  */
 const path = require("path");
 const fs = require("fs");
 const pptxgen = require("pptxgenjs");
 
-const outDir = process.argv[2];
-const video = path.join(outDir, "highlight.mp4");
-const cover = path.join(outDir, "cover.png");
-const qr = path.join(outDir, "qr.png");
+const dir = process.argv[2];
+const outFile = process.argv[3] || path.join(dir, "ff-raw.pptx");
+const video = path.join(dir, "highlight.mp4");
+const cover = path.join(dir, "cover.png");
+const qr = path.join(dir, "qr.png");
 
-const THEME = {
-  name: "X3D Copilot",
-  headFontFace: "Calibri",
-  bodyFontFace: "Calibri",
-  colors: { dk1: "0F1216", lt1: "FFFFFF", dk2: "161B22", lt2: "E6EDF3", accent1: "34D399", accent2: "F59E0B", accent3: "8B98A5", accent4: "60A5FA", accent5: "10B981", accent6: "2A323C", hlink: "34D399", folHlink: "34D399" },
-};
+// Palette taken from the Web3D 2026 template content slides
+const NAVY = "06194F", SKY = "5CC8FF", WHITE = "FFFFFF", PALE = "C9D6EA", GOLD = "FFD166";
+const HEAD = "Arial", BODY = "Calibri";
 
 const pres = new pptxgen();
-pres.layout = "LAYOUT_WIDE"; // 13.333 x 7.5
+pres.layout = "LAYOUT_WIDE"; // 13.333 x 7.5, same as the template
 pres.author = "Alberto Jaspe-Villanueva";
-pres.title = "Closing the Loop: AI authoring of X3D 4.0 that conforms by construction";
-pres.theme = { headFontFace: THEME.headFontFace, bodyFontFace: THEME.bodyFontFace };
+pres.title = "X3D Copilot";
+pres.theme = { headFontFace: HEAD, bodyFontFace: BODY };
 
 const slide = pres.addSlide();
-slide.background = { color: THEME.colors.dk1 };
+// no background: the template master supplies the blue gradient and the Web3D logo
 
-// ---- left column ---------------------------------------------------------------
-const L = 0.6;
-slide.addText("Closing the Loop", { x: L, y: 0.45, w: 5.6, h: 0.8, fontSize: 40, bold: true, color: "FFFFFF", margin: 0, isTextBox: true, objectName: "Title" });
-slide.addText("AI that writes X3D 4.0 scenes, and cannot ship an invalid one", { x: L, y: 1.2, w: 5.6, h: 0.75, fontSize: 19, color: THEME.colors.accent1, margin: 0, isTextBox: true, objectName: "Tagline" });
+const card = (name, x, y, w, h) =>
+  slide.addShape(pres.ShapeType.roundRect, { x, y, w, h, fill: { color: NAVY, transparency: 20 }, line: { color: NAVY, transparency: 100 }, rectRadius: 0.08, objectName: name });
 
-// three callouts
-const rows = [
-  ["260", "nodes of the X3D 4.0 object model, read by the AI through a tool instead of guessed from memory"],
-  ["3", "independent validators on every edit: official XML Schema, spec-derived linter, X_ITE runtime"],
-  ["1", "screenshot: the AI looks at its own render before it answers"],
+// ---- title -----------------------------------------------------------------------
+slide.addText([
+  { text: "X3D Copilot", options: { fontFace: HEAD, fontSize: 40, bold: true, color: WHITE, breakLine: true } },
+  { text: "Describe a 3D scene in plain words. Get a valid X3D 4.0 scene, live in your browser.", options: { fontFace: BODY, fontSize: 20, color: SKY } },
+], { x: 0.6, y: 0.3, w: 12.1, h: 1.1, margin: 0, isTextBox: true, valign: "top", objectName: "Title" });
+
+// ---- left column: what it is ---------------------------------------------------------
+const L = 0.6, LW = 5.9;
+card("Card what", L, 1.5, LW, 2.05);
+slide.addText("WHAT IT IS", { x: L + 0.2, y: 1.55, w: LW - 0.4, h: 0.35, fontFace: HEAD, fontSize: 13, bold: true, color: SKY, charSpacing: 2, margin: 0, isTextBox: true, valign: "middle", objectName: "What header" });
+const what = [
+  ["A 3D editor that runs in the browser.", " Live view, source editor, drag objects, import glTF or OBJ, export X3D. Nothing to install."],
+  ["An AI co-author.", " Just say what you want: “a snowman at night”, “make the hat jump when clicked”."],
+  ["A referee that never sleeps.", " Every change, yours or the AI's, is checked against the X3D 4.0 standard before you see it."],
 ];
-let y = 2.25;
-for (const [num, text] of rows) {
-  slide.addShape(pres.ShapeType.roundRect, { x: L, y, w: 5.6, h: 0.95, fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent6, width: 0.75 }, rectRadius: 0.12, objectName: "Card " + num });
-  slide.addText(num, { x: L + 0.15, y: y + 0.08, w: 1.0, h: 0.8, fontSize: 40, bold: true, color: THEME.colors.accent1, align: "center", valign: "middle", margin: 0, isTextBox: true, objectName: "Stat " + num });
-  slide.addText(text, { x: L + 1.25, y: y + 0.08, w: 4.2, h: 0.8, fontSize: 14, color: THEME.colors.lt2, valign: "middle", margin: 0, isTextBox: true, objectName: "Stat text " + num });
-  y += 1.1;
-}
-
-// result line
-slide.addText([
-  { text: "Result: ", options: { bold: true, color: THEME.colors.accent2 } },
-  { text: "standards-conformant 3D content by construction. Runs entirely in the browser, open source (MIT), works with Gemini or Claude using your own key.", options: { color: THEME.colors.lt2 } },
-], { x: L, y: 5.6, w: 5.6, h: 0.8, fontSize: 14, margin: 0, isTextBox: true, valign: "top", objectName: "Result" });
-
-// ---- right column: video --------------------------------------------------------
-const VX = 6.6, VY = 0.55, VW = 6.15, VH = VW * 9 / 16; // 6.15 x 3.46
-slide.addShape(pres.ShapeType.roundRect, { x: VX - 0.08, y: VY - 0.08, w: VW + 0.16, h: VH + 0.16, fill: { color: THEME.colors.dk2 }, line: { color: THEME.colors.accent6, width: 0.75 }, rectRadius: 0.1, objectName: "Video frame" });
-slide.addMedia({ type: "video", path: video, cover: "image/png;base64," + fs.readFileSync(cover).toString("base64"), x: VX, y: VY, w: VW, h: VH, objectName: "Highlight video" });
-slide.addText("Snowman from one sentence, then details, moon shadows and a click behaviour. Every step validated; eleven planted errors repaired in one request.", { x: VX, y: VY + VH + 0.12, w: VW, h: 0.55, fontSize: 11.5, italic: true, color: THEME.colors.accent3, margin: 0, isTextBox: true, objectName: "Video caption" });
-
-// how it works strip under the video
-const steps = ["Prompt", "Look up spec", "Edit scene", "Validate", "Screenshot", "Answer"];
-const sx = VX, sy = 4.85, sw = VW, gap = 0.08;
-const bw = (sw - gap * (steps.length - 1)) / steps.length;
-steps.forEach((s, i) => {
-  const x = sx + i * (bw + gap);
-  const isCheck = i === 3;
-  slide.addShape(pres.ShapeType.roundRect, { x, y: sy, w: bw, h: 0.55, fill: { color: isCheck ? THEME.colors.accent1 : THEME.colors.dk2 }, line: { color: isCheck ? THEME.colors.accent1 : THEME.colors.accent6, width: 0.75 }, rectRadius: 0.08, objectName: "Step " + s });
-  slide.addText(s, { x, y: sy, w: bw, h: 0.55, fontSize: 11, bold: true, color: isCheck ? THEME.colors.dk1 : THEME.colors.lt2, align: "center", valign: "middle", margin: 0, isTextBox: true, objectName: "Step label " + s });
+what.forEach(([lead, rest], i) => {
+  slide.addText([
+    { text: lead, options: { bold: true, color: WHITE } },
+    { text: rest, options: { color: PALE } },
+  ], { x: L + 0.2, y: 1.92 + i * 0.53, w: LW - 0.4, h: 0.52, fontFace: BODY, fontSize: 13, margin: 0, isTextBox: true, valign: "top", objectName: "What " + (i + 1) });
 });
-slide.addText("The model can only act through tools; validation reports feed back until the scene is valid", { x: sx, y: sy + 0.62, w: sw, h: 0.4, fontSize: 11.5, color: THEME.colors.accent3, align: "center", margin: 0, isTextBox: true, objectName: "Loop note" });
 
-// ---- footer: QR + links + author --------------------------------------------------
-slide.addImage({ path: qr, x: 11.75, y: 6.05, w: 1.0, h: 1.0, objectName: "QR" });
+// ---- left column: how it works --------------------------------------------------------
+card("Card how", L, 3.7, LW, 2.65);
+slide.addText("HOW IT WORKS", { x: L + 0.2, y: 3.75, w: LW - 0.4, h: 0.35, fontFace: HEAD, fontSize: 13, bold: true, color: SKY, charSpacing: 2, margin: 0, isTextBox: true, valign: "middle", objectName: "How header" });
+const how = [
+  ["You ask", " in plain words, for a new scene or a change to the one on screen."],
+  ["The AI reads the X3D specification", " and edits the scene through tools; it never writes blind."],
+  ["The standard checks the result:", " schema, semantic rules and the 3D runtime. The AI must fix every error before it answers."],
+  ["The AI looks at the render", " and replies. You keep editing by hand, by dragging, or by chat."],
+];
+how.forEach(([lead, rest], i) => {
+  const y = 4.12 + i * 0.55;
+  slide.addText(String(i + 1), { x: L + 0.2, y, w: 0.45, h: 0.5, fontFace: HEAD, fontSize: 26, bold: true, color: SKY, margin: 0, isTextBox: true, valign: "top", objectName: "Step num " + (i + 1) });
+  slide.addText([
+    { text: lead, options: { bold: true, color: WHITE } },
+    { text: rest, options: { color: PALE } },
+  ], { x: L + 0.7, y, w: LW - 0.9, h: 0.52, fontFace: BODY, fontSize: 13, margin: 0, isTextBox: true, valign: "top", objectName: "Step text " + (i + 1) });
+});
+
+// ---- right column: video --------------------------------------------------------------
+const VX = 6.85, VY = 1.5, VW = 5.85, VH = VW * 9 / 16; // 5.85 x 3.29
+card("Video frame", VX - 0.08, VY - 0.08, VW + 0.16, VH + 0.16);
+slide.addMedia({ type: "video", path: video, cover: "image/png;base64," + fs.readFileSync(cover).toString("base64"), x: VX, y: VY, w: VW, h: VH, objectName: "Highlight video" });
+slide.addText("In the clip: an AI-built still life, a snowman from one sentence, moon shadows, a click that makes the hat hop, the solar system, dragging objects, physically based materials, and a scene with eleven errors repaired in one request.",
+  { x: VX, y: VY + VH + 0.12, w: VW, h: 0.55, fontFace: BODY, fontSize: 11, italic: true, color: PALE, margin: 0, isTextBox: true, valign: "top", objectName: "Video caption" });
+
+// ---- try it box (stops before the template logo at x = 11.7) ---------------------------------
+const TY = 5.55, TH = 1.0;
+card("Card try", VX, TY, 4.7, TH);
+slide.addImage({ path: qr, x: VX + 0.08, y: TY + 0.08, w: TH - 0.16, h: TH - 0.16, objectName: "QR" });
 slide.addText([
-  { text: "albertojaspe.net/x3d-copilot", options: { bold: true, color: THEME.colors.accent1, breakLine: true } },
-  { text: "github.com/ajaspe/x3d-copilot", options: { color: THEME.colors.lt2, breakLine: true } },
-  { text: "Video: youtu.be/ll1CE0XaRjo", options: { color: THEME.colors.accent3 } },
-], { x: 6.6, y: 6.1, w: 5.0, h: 0.95, fontSize: 13, margin: 0, isTextBox: true, valign: "middle", objectName: "Links" });
+  { text: "Try it now: ", options: { bold: true, color: WHITE } },
+  { text: "albertojaspe.net/x3d-copilot", options: { bold: true, color: GOLD, breakLine: true } },
+  { text: "Code (MIT): ", options: { color: PALE } },
+  { text: "github.com/ajaspe/x3d-copilot", options: { color: WHITE, breakLine: true } },
+  { text: "Video: ", options: { color: PALE } },
+  { text: "youtu.be/ll1CE0XaRjo", options: { color: WHITE, breakLine: true } },
+  { text: "Bring your own Gemini or Claude key for the AI.", options: { color: PALE, italic: true } },
+], { x: VX + TH, y: TY + 0.05, w: 4.7 - TH - 0.1, h: TH - 0.1, fontFace: BODY, fontSize: 11.5, margin: 0, isTextBox: true, valign: "middle", objectName: "Links" });
+
+// ---- author ----------------------------------------------------------------------------
 slide.addText([
-  { text: "Alberto Jaspe-Villanueva", options: { bold: true, color: "FFFFFF", breakLine: true } },
-  { text: "KAUST  ·  Web3D 2026, AI & Web3D Innovation Competition", options: { color: THEME.colors.accent3 } },
-], { x: L, y: 6.55, w: 5.8, h: 0.6, fontSize: 12, margin: 0, isTextBox: true, valign: "bottom", objectName: "Author" });
+  { text: "Alberto Jaspe-Villanueva", options: { bold: true, color: WHITE } },
+  { text: "   King Abdullah University of Science and Technology (KAUST)   ·   AI & Web3D Innovation Competition, Web3D 2026", options: { color: PALE } },
+], { x: L, y: 6.55, w: 10.9, h: 0.4, fontFace: BODY, fontSize: 12, margin: 0, isTextBox: true, valign: "middle", objectName: "Author" });
 
-slide.addNotes("2-minute fast-forward. Start the video when you begin speaking; it is muted and runs 79 seconds. Script in talk.md.");
+slide.addNotes("Two-minute fast-forward. Click the video as you start speaking; it is muted and runs 105 seconds. Full script in talk.md.");
 
-pres.writeFile({ fileName: path.join(outDir, "x3d-copilot-fastforward.pptx") }).then((f) => console.log("wrote", f));
+pres.writeFile({ fileName: outFile }).then((f) => console.log("wrote", f));
