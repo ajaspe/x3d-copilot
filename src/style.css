@@ -209,6 +209,9 @@ dialog .row { display: flex; gap: 6px; }
 dialog .row input { flex: 1; }
 dialog .small { font-size: 12px; }
 dialog p { margin: 0; line-height: 1.5; }
+dialog .awards { display: grid; grid-template-columns: auto auto 1fr; gap: 6px 12px; align-items: center; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: rgba(217, 178, 74, 0.06); }
+dialog .awards img { width: 96px; height: 96px; }
+dialog .awards p { font-size: 13px; }
 
 @media (max-width: 900px) {
   #workspace { grid-template-columns: 1fr; grid-template-rows: 40vh 1fr 1fr; }
