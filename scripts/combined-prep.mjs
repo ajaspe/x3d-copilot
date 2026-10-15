@@ -36,7 +36,7 @@ async function card(context, name, title, subtitle, lines) {
     <div style="position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;padding-bottom:40px">
       <div style="display:flex;align-items:center;gap:18px;margin-bottom:18px"><svg viewBox='0 0 32 32' width='64' height='64'><path fill='#34d399' d='M16 2 3 9v14l13 7 13-7V9z'/><path fill='#065f46' d='M16 16 3 9v14l13 7z'/><path fill='#10b981' d='M16 16v14l13-7V9z'/></svg><div style="font-size:64px;font-weight:700">${title}</div></div>
       <div style="font-size:30px;color:#8b98a5;max-width:1200px">${subtitle}</div>
-      <div style="margin-top:36px;font-size:24px;color:#34d399;line-height:1.7">${lines.join("<br/>")}</div>
+      <div style="margin-top:36px;font-size:24px;color:#34d399;line-height:1.6">${lines.join("<br/>")}</div>
     </div>
     ${corner}
   </body></html>`);
@@ -46,7 +46,7 @@ async function card(context, name, title, subtitle, lines) {
 
 const browser = await chromium.launch({ channel: process.env.BROWSER_CHANNEL ?? "msedge", headless: true });
 const context = await browser.newContext({ viewport: { width: W, height: H } });
-await card(context, "title", "X3D Copilot", "An X3D 4.0 editor with an AI co-author, entirely in the browser", ["Alberto Jaspe-Villanueva · KAUST"]);
+await card(context, "title", "X3D Copilot", "An X3D 4.0 editor with an AI co-author, entirely in the browser", ["Alberto Jaspe-Villanueva", "<span style=\"font-size:20px;color:#8b98a5\">https://albertojaspe.net</span>"]);
 await card(context, "end", "X3D Copilot", "Open source · MIT · no installation · bring your own Gemini or Claude key", ["albertojaspe.net/x3d-copilot", "github.com/ajaspe/x3d-copilot"]);
 await browser.close();
 console.log("cards written");
