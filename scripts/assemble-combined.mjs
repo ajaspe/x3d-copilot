@@ -58,7 +58,9 @@ for (const [name, id, hold = 0] of ORDER) {
   const s = src[name];
   const i = s.timeline.findIndex((t) => t.id === id);
   const seg = s.timeline[i];
-  const next = s.timeline[i + 1].start;
+  // the recording runs ~0.4 s ahead of the stamped timeline, so the next segment's first frames
+  // (e.g. the solar system loading) leak into this one: stop a little before the stamp
+  const next = s.timeline[i + 1].start - 0.7;
   const input = name === "tools" ? 0 : 1;
   const nar = narFor(name, id);
   audio.push({ file: nar.file, at: cursor + 0.3 });
