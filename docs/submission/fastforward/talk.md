@@ -1,25 +1,25 @@
 # X3D Copilot, fast-forward talk (1 slide, about 2.5 minutes)
 
 **AI & Web3D Innovation Competition, Web3D 2026, Doha.**
-Slide: `x3d-copilot-fastforward-v2.pptx`. The first part (about 40 seconds) is spoken over the static slide. Then click the video and talk over it; it is muted and runs 105 seconds.
+Slide: `x3d-copilot-fastforward-v2.pptx`. The first part (about 50 seconds) is spoken over the static slide. Then click the video and talk over it; it is muted and runs 105 seconds.
 
-Pace: the spoken part is about 280 words, written for 120 to 130 words per minute, so it is comfortable to say slowly. Short sentences on purpose: pause at every full stop.
+Pace: the spoken part is about 330 words, written for 120 to 130 words per minute, so it is comfortable to say slowly. Short sentences on purpose: pause at every full stop.
 
 Clip timeline (seconds): 0 still life, 10 typing the prompt, 18 snowman, 32 moon shadows, 39 hat click, 54 solar system, 70 dragging the earth, 82 PBR spheres, 95 broken scene repaired, 105 end.
 
 ---
 
-## Part 1, slide only (about 40 s)
+## Part 1, slide only (about 50 s)
 
-Good afternoon. I am Alberto Jaspe, from KAUST, and this is X3D Copilot.
+Good afternoon. I am Alberto Jaspe, from KAUST.
 
-X3D Copilot is a 3D editor that runs in the browser. You see the scene and the X3D source side by side, you can edit, drag objects, import and export. Nothing to install.
+We wanted to explore the potential of language models for generating 3D scenes. The obvious approach does not work: you ask the model for a scene, you copy and paste the result into the browser, and you get nothing. Wrong field names, nodes in the wrong place, and the model never sees its own result.
 
-It also has an AI co-author. You describe a scene in plain words, and the AI builds it.
+But X3D has something most 3D formats do not have: a formal specification, with a schema and an object model that can be checked by a machine. That is where X3D Copilot comes from.
 
-We all know the problem: a language model writes X3D that looks correct, and the browser shows nothing.
+X3D Copilot is a 3D editor that runs in the browser. You see the scene and the X3D source side by side, you can edit, drag objects, import and export. Nothing to install. And it has an AI co-author: you describe a scene in plain words, and the AI builds it.
 
-So the AI here cannot write the file directly. It works in a loop. It reads the X3D specification, the Unified Object Model. It edits the scene. Then the standard checks the result: the official schema, semantic rules, and X_ITE. If there is an error, the AI must fix it before it answers. And at the end, it takes a screenshot and checks what it made.
+The AI cannot write the file directly. It works in a loop. It reads the specification, the Unified Object Model. It edits the scene. Then the standard checks the result: the official schema, semantic rules, and X_ITE. If there is an error, the AI must fix it before it answers. At the end, it takes a screenshot and checks what it made.
 
 Let me show you.
 
