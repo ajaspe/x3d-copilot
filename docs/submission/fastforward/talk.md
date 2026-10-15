@@ -1,27 +1,27 @@
 # X3D Copilot, fast-forward talk (1 slide, about 2.5 minutes)
 
 **AI & Web3D Innovation Competition, Web3D 2026, Doha.**
-Slide: `x3d-copilot-fastforward-v2.pptx`. The first part (about 50 seconds) is spoken over the static slide. Then click the video and talk over it; it is muted and runs 105 seconds.
+Slide: `x3d-copilot-fastforward-v2.pptx`. The first part (about 40 seconds) is spoken over the static slide. Then click the video and talk over it; it is muted and runs 105 seconds.
 
-Pace: the spoken part is about 330 words, written for 120 to 130 words per minute, so it is comfortable to say slowly. Short sentences on purpose: pause at every full stop.
+Pace: the spoken part is about 280 words, written for 120 to 130 words per minute, so it is comfortable to say slowly. Short sentences on purpose: pause at every full stop.
 
 Clip timeline (seconds): 0 still life, 10 typing the prompt, 18 snowman, 32 moon shadows, 39 hat click, 54 solar system, 70 dragging the earth, 82 PBR spheres, 95 broken scene repaired, 105 end.
 
 ---
 
-## Part 1, slide only (about 50 s)
+## Part 1, slide only (about 40 s)
 
 Good afternoon. I am Alberto Jaspe, from KAUST, and this is X3D Copilot.
 
-X3D Copilot is a 3D editor that runs in the browser, with nothing to install. It shows the scene and the X3D source side by side. You can edit the source, drag objects with a gizmo, import glTF or VRML, and export X3D.
+X3D Copilot is a 3D editor that runs in the browser. You see the scene and the X3D source side by side, you can edit, drag objects, import and export. Nothing to install.
 
-It also has an AI co-author. You describe what you want in plain words, and it builds or modifies the scene.
+It also has an AI co-author. You describe a scene in plain words, and the AI builds it.
 
-The problem with that idea is well known. A language model writes X3D that looks correct, and the browser shows nothing. Wrong field names, nodes in the wrong place, and the model never sees its own result.
+We all know the problem: a language model writes X3D that looks correct, and the browser shows nothing.
 
-X3D Copilot solves this with a closed loop. The AI cannot touch the file directly; it works only through tools. First, it reads the X3D specification, the Unified Object Model that this community publishes. Then it edits the scene. Then the standard checks the result: the official X3D 4.0 schema, running in the browser, a set of semantic rules, and X_ITE as the runtime. If there is any error, the report goes back to the AI, and it must fix the error before it answers. Finally, it takes a screenshot and checks what it made.
+So the AI here cannot write the file directly. It works in a loop. It reads the X3D specification, the Unified Object Model. It edits the scene. Then the standard checks the result: the official schema, semantic rules, and X_ITE. If there is an error, the AI must fix it before it answers. And at the end, it takes a screenshot and checks what it made.
 
-That is the loop. Let me show you.
+Let me show you.
 
 ## Part 2, click the video (105 s)
 
