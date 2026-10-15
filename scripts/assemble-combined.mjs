@@ -133,7 +133,8 @@ parts.forEach((p, i) => {
     return;
   }
   f.push(`[${p.input}:v]trim=start=${p.from.toFixed(3)}:end=${p.to.toFixed(3)},setpts=(PTS-STARTPTS)/${p.speed},${norm}[p${i}]`);
-  if (p.speed > 1.5 && useBadge) { // badge only on real time-lapses, not on the 1.2x playback f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`); labels.push(`[pb${i}]`); }
+  // badge only on real time-lapses, not on the 1.2x playback
+  if (p.speed > 1.5 && useBadge) { f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`); labels.push(`[pb${i}]`); }
   else labels.push(`[p${i}]`);
 });
 f.push(`${labels.join("")}concat=n=${parts.length}:v=1:a=0,fps=30[v0]`);
