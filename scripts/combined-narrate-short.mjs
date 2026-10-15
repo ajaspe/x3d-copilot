@@ -18,7 +18,13 @@ const rate = ri >= 0 ? process.argv[ri + 1] : "+20%";
 
 const lines = [
   ["s0", "X3D Copilot. Winner of the Tool of the Year and the AI and Web3D Innovation awards at Web3D 2026."],
-  ["t1", "X3D Copilot is an X3D 4.0 editor with a built-in AI co-author, and it runs entirely in the browser. Let's start with one sentence: a studio still life with a ceramic vase, a bronze sphere and a glass cube. The copilot looks up the nodes it needs in the specification database, writes the file, validates it against the X3D schema, a semantic linter and the X_ITE runtime, and checks a screenshot before answering. The result is standard X3D 4.0, with physically based materials and shadows, that you can now edit by hand."],
+  // tools S1 is split into a UI tour (with pane highlights) while the first prompt runs, and the result line
+  ["t1i", "X3D Copilot is an X3D 4.0 editor with a built-in AI co-author, and it runs entirely in the browser. The interface has three parts."],
+  ["t1s", "On the right, the X3D source: the file itself, with autocompletion and validation as you type."],
+  ["t1c", "On the left, the AI copilot. It works with different models, Gemini or Claude, using your own key."],
+  ["t1v", "And in the middle, the live 3D scene, rendered by X_ITE."],
+  ["t1p", "Let's start with one sentence: a studio still life with a ceramic vase, a bronze sphere and a glass cube. The copilot looks up the nodes it needs in the specification database, writes the file, validates it against the X3D schema, a semantic linter and the X_ITE runtime, and checks a screenshot before answering."],
+  ["t1r", "And here is the result: standard X3D 4.0, with physically based materials and shadows, that you can now edit by hand."],
   ["a2", "Now from an empty file and one sentence: a snowman on snowy ground at night, under a starry sky. Watch the tool steps: the model looks up nodes in the specification whenever it needs a field name or a default, writes the scene, validates it, and any error goes straight back to the model. Then it takes a screenshot to check the render before answering."],
   ["a3", "We build on it: a carrot nose, coal eyes and buttons, stick arms, a scarf and a top hat. The model reads the current scene and adds only what is needed, with exact patches, each validated again."],
   ["a4", "Some atmosphere: we ask for the moonlight to cast shadows. The model turns the moon's light into a shadow caster, with standard X3D 4.0 lighting fields that the validators accept."],

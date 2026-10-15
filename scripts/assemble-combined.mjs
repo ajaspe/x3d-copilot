@@ -50,6 +50,7 @@ const GAP = SHORT ? 1.2 : 2.2; // silence kept after each narration before the n
 // ---- parts ----------------------------------------------------------------------
 const parts = []; // { input, from, to, speed } or { card, seconds }
 const audio = []; // { file, at }
+const overlays = []; // { key, from, to } pane highlights (output seconds), PNGs from ui-highlights.mjs
 let cursor = 0;
 const push = (input, from, to, speed) => { if (to - from < 0.05) return; parts.push({ input, from, to, speed }); cursor += (to - from) / speed; };
 
@@ -62,9 +63,33 @@ for (const [name, id, hold = 0] of ORDER) {
   // (e.g. the solar system loading) leak into this one: stop a little before the stamp
   const next = s.timeline[i + 1].start - 0.7;
   const input = name === "tools" ? 0 : 1;
+  const len = next - seg.start;
+  if (SHORT && name === "tools" && id === 1) {
+    // UI tour while the first prompt is typed and the model works: intro, three highlighted panes, the prompt;
+    // then the result line exactly when the still life appears (start of the 1x tail)
+    const clip = (key) => ({ key, secs: short.narration.find((n) => n.id === key)?.seconds ?? 0, file: join(short.dir, `${key}.mp3`) });
+    let t = cursor + 0.3;
+    for (const c of ["t1i", "t1s", "t1c", "t1v", "t1p"].map(clip)) {
+      audio.push({ file: c.file, at: t });
+      const hl = { t1s: "source", t1c: "chat", t1v: "view" }[c.key];
+      if (hl) overlays.push({ key: hl, from: t - 0.2, to: t + c.secs + 0.4 });
+      t += c.secs + 0.5;
+    }
+    const keep = Math.min(len, (t - cursor + 0.4) * SPEED);
+    push(input, seg.start, seg.start + keep, SPEED);
+    const lapseEnd = Math.min(next, Math.max(seg.start + keep, seg.busyUntil));
+    if (lapseEnd - (seg.start + keep) > 0.3) push(input, seg.start + keep, lapseEnd, K);
+    const res = clip("t1r");
+    audio.push({ file: res.file, at: cursor + 0.4 });
+    const tailOut = (next - lapseEnd) / SPEED;
+    push(input, lapseEnd, next, SPEED);
+    const holdS = Math.max(hold, res.secs + 1.4 - tailOut);
+    push(input, next - 0.2, next, 0.2 / holdS);
+    console.log(`${name} S${id} (tour) -> ${(cursor).toFixed(1)} s`);
+    continue;
+  }
   const nar = narFor(name, id);
   audio.push({ file: nar.file, at: cursor + 0.3 });
-  const len = next - seg.start;
   // source seconds that play at SPEED while the narration runs (output length = narration + GAP)
   const keep = Math.min(len, (nar.secs + GAP) * SPEED);
   push(input, seg.start, seg.start + keep, SPEED);
@@ -95,6 +120,8 @@ let badgeIdx = -1;
 if (useBadge) { badgeIdx = 4; args.push("-loop", "1", "-i", badge); }
 const a0 = args.filter((a) => a === "-i").length;
 for (const a of audio) args.push("-i", a.file);
+const o0 = a0 + audio.length;
+for (const o of overlays) args.push("-loop", "1", "-t", String((o.to + 1).toFixed(2)), "-i", join(vdir, "raw-combined", `hl-${o.key}.png`));
 
 const f = [], labels = [];
 const norm = "scale=1600:900,setsar=1,fps=25,format=yuv420p";
@@ -106,10 +133,17 @@ parts.forEach((p, i) => {
     return;
   }
   f.push(`[${p.input}:v]trim=start=${p.from.toFixed(3)}:end=${p.to.toFixed(3)},setpts=(PTS-STARTPTS)/${p.speed},${norm}[p${i}]`);
-  if (p.speed > 1.05 && useBadge) { f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`); labels.push(`[pb${i}]`); }
+  if (p.speed > 1.5 && useBadge) { // badge only on real time-lapses, not on the 1.2x playback f.push(`[p${i}][${badgeIdx}:v]overlay=x=W-w-24:y=24:shortest=1[pb${i}]`); labels.push(`[pb${i}]`); }
   else labels.push(`[p${i}]`);
 });
-f.push(`${labels.join("")}concat=n=${parts.length}:v=1:a=0,fps=30[vout]`);
+f.push(`${labels.join("")}concat=n=${parts.length}:v=1:a=0,fps=30[v0]`);
+let vcur = "v0";
+overlays.forEach((o, i) => {
+  f.push(`[${o0 + i}:v]format=rgba,fade=t=in:st=${o.from.toFixed(2)}:d=0.3:alpha=1,fade=t=out:st=${(o.to - 0.3).toFixed(2)}:d=0.3:alpha=1[hl${i}]`);
+  f.push(`[${vcur}][hl${i}]overlay=enable='between(t,${o.from.toFixed(2)},${o.to.toFixed(2)})'[v${i + 1}]`);
+  vcur = `v${i + 1}`;
+});
+f.push(`[${vcur}]null[vout]`);
 const amix = [];
 audio.forEach((a, i) => { const d = Math.round(a.at * 1000); f.push(`[${a0 + i}:a]adelay=${d}|${d}[a${i}]`); amix.push(`[a${i}]`); });
 f.push(`${amix.join("")}amix=inputs=${audio.length}:normalize=0,apad[aout]`);
